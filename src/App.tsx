@@ -18,9 +18,9 @@ function App() {
 
   // Globe Orchestration: Position, Scale, and Shape (Morphing)
   // Transition kicks in around 25% of the page scroll (entering 2nd section)
-  const globeX = useTransform(smoothProg, [0, 0.35, 1], ["0%", "-35%", "-35%"]);
-  const globeY = useTransform(smoothProg, [0, 0.35, 1], ["0%", "20%", "20%"]);
-  const globeScale = useTransform(smoothProg, [0, 0.35], [1, 0.9]);
+  const globeX = useTransform(smoothProg, [0, 0.3, 0.8], ["0%", "-32%", "-32%"]);
+  const globeY = useTransform(smoothProg, [0, 0.3, 0.8], ["0%", "20%", "20%"]);
+  const globeScale = useTransform(smoothProg, [0, 0.3], [1, 0.85]);
   const globeShape = useTransform(smoothProg, [0.1, 0.35], [0, 1]); // 0 = Sphere, 1 = Box
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -40,8 +40,8 @@ function App() {
   
   return (
     <div ref={containerRef} className="relative bg-black w-full overflow-x-hidden">
-      {/* 3D PERSISTENT BACKGROUND LAYER */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
+      {/* 3D PERSISTENT INTERACTIVE LAYER */}
+      <div className="fixed inset-0 z-20 pointer-events-none">
         <motion.div 
           style={{ x: globeX, y: globeY, scale: globeScale }}
           className="w-full h-full flex items-center justify-center translate-y-[-10vh]"
@@ -88,7 +88,7 @@ function App() {
         </div>
 
         <motion.div 
-          className="relative z-10 text-center px-4"
+          className="relative z-30 text-center px-4"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: 'easeOut' }}
@@ -157,10 +157,10 @@ function App() {
           </div>
 
           {/* Cards Wrapper */}
-          <div className="relative h-[65vh] w-full overflow-visible">
+          <div className="relative h-[65vh] w-full overflow-visible z-10">
             <motion.div 
-              style={{ x: useTransform(smoothProg, [0.35, 1], ["0%", "-150%"]) }}
-              className="flex gap-8 absolute left-[45%] md:left-[35%] top-0 h-full w-max"
+              style={{ x: useTransform(smoothProg, [0.15, 0.9], ["0%", "-250%"]) }}
+              className="flex gap-10 absolute left-[38%] md:left-[32%] top-0 h-full w-max ml-[15vw]"
             >
               {[
                 { 
