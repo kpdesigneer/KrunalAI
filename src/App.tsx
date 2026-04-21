@@ -6,22 +6,28 @@ import { ParticleGlobe } from './components/ParticleGlobe';
 function App() {
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const servicesRef = useRef<HTMLDivElement>(null);
   
-  // High-precision scroll tracking for global transitions
-  const { scrollYProgress } = useScroll({
+  // 1. GLOBAL SCROLL: Handles Globe migration from Hero -> Section 2
+  const { scrollYProgress: globalScroll } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"]
   });
+  const smoothProg = useSpring(globalScroll, { damping: 25, stiffness: 60 });
 
-  // Smooth out the scroll delta for buttery transitions
-  const smoothProg = useSpring(scrollYProgress, { damping: 25, stiffness: 60 });
+  // 2. LOCAL SCROLL: Handles Horizontal Card movement specifically during the 600vh pin
+  const { scrollYProgress: sectionScroll } = useScroll({
+    target: servicesRef,
+    offset: ["start start", "end end"]
+  });
+  const smoothSectionProg = useSpring(sectionScroll, { damping: 25, stiffness: 60 });
 
   // Globe Orchestration: Position, Scale, and Shape (Morphing)
-  // Transition kicks in around 20% of the page scroll (entering 2nd section)
-  const globeX = useTransform(smoothProg, [0, 0.25, 0.85], ["0%", "-32%", "-32%"]);
-  const globeY = useTransform(smoothProg, [0, 0.25, 0.85], ["0%", "20%", "20%"]);
-  const globeScale = useTransform(smoothProg, [0, 0.25], [1, 0.85]);
-  const globeShape = useTransform(smoothProg, [0.1, 0.3], [0, 1]); // 0 = Sphere, 1 = Box
+  // These use the Global scroll to transition early on
+  const globeX = useTransform(smoothProg, [0, 0.2, 0.5], ["0%", "-33%", "-33%"]);
+  const globeY = useTransform(smoothProg, [0, 0.2, 0.5], ["0%", "20%", "20%"]);
+  const globeScale = useTransform(smoothProg, [0, 0.2], [1, 0.85]);
+  const globeShape = useTransform(smoothProg, [0.05, 0.18], [0, 1]); // Sphere -> Box early
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!headlineRef.current) return;
@@ -149,7 +155,7 @@ function App() {
       </section>
 
       {/* Services Section - Horizontal Scroll Container */}
-      <section id="services" className="relative h-[600vh] z-10 bg-transparent">
+      <section id="services" ref={servicesRef} className="relative h-[600vh] z-10 bg-transparent">
         <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center px-8 md:px-20">
           {/* Header Info */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 ml-[45%] md:ml-[35%] pr-10">
@@ -164,7 +170,7 @@ function App() {
           {/* Cards Wrapper */}
           <div className="relative h-[65vh] w-full overflow-visible z-10">
             <motion.div 
-              style={{ x: useTransform(smoothProg, [0.25, 0.95], ["0%", "-380%"]) }}
+              style={{ x: useTransform(smoothSectionProg, [0, 1], ["0%", "-350%"]) }}
               className="flex gap-10 absolute left-[38%] md:left-[32%] top-0 h-full w-max ml-[15vw]"
             >
               {[
