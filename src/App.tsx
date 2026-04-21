@@ -5,6 +5,7 @@ import { ParticleGlobe } from './components/ParticleGlobe';
 
 function App() {
   const headlineRef = useRef<HTMLHeadingElement>(null);
+  const servicesRef = useRef<HTMLHeadingElement>(null);
   const { scrollYProgress } = useScroll();
   
   // Smooth scroll-driven position for the globe
@@ -23,6 +24,21 @@ function App() {
   const handleMouseLeave = () => {
     if (!headlineRef.current) return;
     headlineRef.current.style.setProperty('--spotlight-opacity', '0');
+  };
+
+  const handleMouseMoveServices = (e: React.MouseEvent) => {
+    if (!servicesRef.current) return;
+    const rect = servicesRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    servicesRef.current.style.setProperty('--mouse-x', `${x}px`);
+    servicesRef.current.style.setProperty('--mouse-y', `${y}px`);
+    servicesRef.current.style.setProperty('--spotlight-opacity', '1');
+  };
+
+  const handleMouseLeaveServices = () => {
+    if (!servicesRef.current) return;
+    servicesRef.current.style.setProperty('--spotlight-opacity', '0');
   };
   
   return (
@@ -129,21 +145,28 @@ function App() {
           {/* Right 50% Content area */}
           <div className="w-full md:w-[50%]">
             <div className="mb-16">
-              <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 text-white">Our Services</h2>
+              <h2 
+                ref={servicesRef}
+                onMouseMove={handleMouseMoveServices}
+                onMouseLeave={handleMouseLeaveServices}
+                className="text-4xl md:text-6xl font-bold tracking-tight mb-4 text-white animated-gradient-text cursor-default"
+              >
+                What I do
+              </h2>
               <p className="text-xl text-gray-400 max-w-xl">
-                We offer comprehensive digital solutions that transform your business and drive innovation across every touchpoint.
+                I design it. I build it. I make it work.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Service Cards */}
               {[
-                { id: '01', title: 'Product Design', desc: 'End-to-end product design—from research and UX flows to polished UI systems.' },
-                { id: '02', title: 'Development', desc: 'Robust, scalable products across web and mobile—from elegant UIs to reliable APIs.' },
-                { id: '03', title: 'GTM Strategy', desc: 'Data-driven go-to-market for SaaS and AI—clear positioning, smart pricing.' },
-                { id: '04', title: 'Healthcare Apps', desc: 'Secure, compliant healthcare software—built for HIPAA and auditability.' },
-                { id: '05', title: 'AI Development', desc: 'Build production-ready AI—rapid prototyping to deployed models.' },
-                { id: '06', title: 'IoT Development', desc: 'From device firmware to cloud ingestion—secure, reliable IoT systems.' },
+                { id: '01', title: 'Design', desc: 'From rough ideas to refined experiences—interfaces that feel intuitive, intentional, and alive.' },
+                { id: '02', title: 'Build', desc: 'I turn concepts into real, working products—fast, scalable, and built to last.' },
+                { id: '03', title: 'Systems', desc: 'Creating structured, scalable systems that keep products consistent, flexible, and future-ready.' },
+                { id: '04', title: 'Experiences', desc: 'Designing interactions that feel seamless, engaging, and actually enjoyable to use.' },
+                { id: '05', title: 'Ideas → Reality', desc: 'From “what if” to “here it is”—bringing ideas to life through design and execution.' },
+                { id: '06', title: 'Innovation', desc: 'Exploring new ways to build, design, and create—pushing beyond the obvious.' },
               ].map((service) => (
                 <motion.div 
                   key={service.id}
