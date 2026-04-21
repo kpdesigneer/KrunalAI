@@ -24,6 +24,7 @@
 }
 
 .animated-gradient-text {
+  position: relative;
   background: linear-gradient(
     90deg,
     #ffffff 0%,
@@ -37,4 +38,31 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: gradient-shift 6s ease-in-out infinite;
+  
+  /* Subtle core depth */
+  filter: drop-shadow(0 0 20px rgba(167, 139, 250, 0.1));
+}
+
+/* Atmospheric Border Glow */
+.animated-gradient-text::before {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  
+  /* Inherit the moving gradient */
+  background: inherit;
+  background-size: inherit;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: inherit;
+  
+  /* Blur the mirrored text to create the border glow bloom */
+  filter: blur(18px);
+  opacity: 0.8;
+  transform: scale(1.02);
 }

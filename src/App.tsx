@@ -52,7 +52,10 @@ function App() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: 'easeOut' }}
         >
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] animated-gradient-text whitespace-nowrap pb-3">
+          <h1 
+            className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] animated-gradient-text whitespace-nowrap pb-3"
+            data-text="I build what others imagine."
+          >
             I build what others <em className="italic font-extrabold">imagine.</em>
           </h1>
         </motion.div>
