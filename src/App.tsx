@@ -85,8 +85,9 @@ function App() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}
         >
-          <p className="text-sm md:text-base text-gray-400 leading-relaxed mb-6">
-            We empower organizations with AI that turns complex challenges into real-world outcomes.
+          <p className="text-sm md:text-base text-gray-400 leading-relaxed mb-6 italic">
+            Less talk. More building.<br />
+            Ideas are easy. I make them real.
           </p>
           <a 
             href="#contact" 
