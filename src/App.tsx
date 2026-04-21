@@ -48,6 +48,8 @@ function App() {
         >
           <Canvas
             camera={{ position: [0, 0, 8], fov: 45 }}
+            eventSource={containerRef as React.RefObject<HTMLElement>}
+            eventPrefix="client"
           >
             <ParticleGlobe externalProgress={globeShape} />
           </Canvas>
