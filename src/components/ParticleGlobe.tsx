@@ -237,29 +237,29 @@ export function ParticleGlobe() {
     return { positions: pSphere, posBox: pBox, posHelix: pHelix, sizes: pointSizes };
   }, []);
 
-  // Modern organic zoom entry using elastic damping
+  // Modern organic zoom-out entry using elastic damping
   const entryDuration = 6.0; 
-  const targetScale = 0.6;
+  const targetScale = 0.8;
 
   useFrame((state) => {
     const prog = smoothProgress.get() * 2.0;
     const elapsed = state.clock.elapsedTime;
 
-    // Organic zoom effect: Scale up from 0 to targetScale with a soft elastic settle
+    // Organic zoom-out: Scale down from a large size to targetScale
     if (groupRef.current && elapsed < entryDuration) {
       const t = elapsed;
-      const damping = 2.4;   
-      const frequency = 6.5; 
+      const damping = 1.8;   
+      const frequency = 4.0; 
       
       const decay = Math.exp(-damping * t);
       const oscillation = Math.cos(frequency * t);
       
-      // Multiplier goes from 0 to ~1.0 with a soft overshoot
-      const scaleMultiplier = 1.0 - (decay * oscillation);
+      // Multiplier starts at ~1.7 and settles at 1.0
+      const scaleMultiplier = 1.0 + (0.7 * decay * oscillation);
       const currentScale = targetScale * scaleMultiplier;
       
       groupRef.current.scale.set(currentScale, currentScale, currentScale);
-      groupRef.current.position.y = 0; // Ensure it stays centered
+      groupRef.current.position.y = 0; 
     } else if (groupRef.current) {
       groupRef.current.scale.set(targetScale, targetScale, targetScale);
       groupRef.current.position.y = 0;
