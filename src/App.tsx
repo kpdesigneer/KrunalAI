@@ -20,7 +20,8 @@ function App() {
     target: servicesRef,
     offset: ["start start", "end end"]
   });
-  const smoothSectionProg = useSpring(sectionScroll, { damping: 25, stiffness: 60 });
+  // Precision-tuned for a 'GSAP-like' controlled, high-end feel
+  const smoothSectionProg = useSpring(sectionScroll, { damping: 28, stiffness: 45 });
 
   // Globe Orchestration: Position, Scale, and Shape (Morphing)
   // These use the Global scroll to transition early on
@@ -156,13 +157,20 @@ function App() {
 
       {/* Services Section - Horizontal Scroll Container */}
       <section id="services" ref={servicesRef} className="relative h-[600vh] z-10 bg-transparent">
-        <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center px-8 md:px-20">
+        <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center">
           {/* Header Info */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 ml-[45%] md:ml-[35%] pr-10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 ml-[10vw] md:ml-[35vw] px-8 md:pr-20">
             <div>
               <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 text-white">Our Services</h2>
+              {/* Horizontal Progress Bar */}
+              <div className="h-1 w-48 bg-white/10 rounded-full overflow-hidden mt-2">
+                <motion.div 
+                  style={{ scaleX: smoothSectionProg }}
+                  className="h-full bg-purple-500 origin-left"
+                />
+              </div>
             </div>
-            <p className="text-gray-400 text-sm md:text-base max-w-sm ml-auto">
+            <p className="text-gray-400 text-sm md:text-base max-w-sm mt-6 md:mt-0">
               We offer comprehensive digital solutions that transform your business and drive innovation across every touchpoint.
             </p>
           </div>
@@ -170,8 +178,11 @@ function App() {
           {/* Cards Wrapper */}
           <div className="relative h-[65vh] w-full overflow-visible z-10">
             <motion.div 
-              style={{ x: useTransform(smoothSectionProg, [0, 1], ["0%", "-350%"]) }}
-              className="flex gap-10 absolute left-[38%] md:left-[32%] top-0 h-full w-max ml-[15vw]"
+              style={{ 
+                x: useTransform(smoothSectionProg, [0, 1], ["0vw", "-380vw"]),
+                z: 0
+              }}
+              className="flex gap-12 absolute left-[15vw] md:left-[35vw] top-0 h-full w-max"
             >
               {[
                 { 
@@ -188,7 +199,7 @@ function App() {
                   desc: 'Robust, scalable products across web and mobile—from elegant UIs to reliable APIs and infrastructure.',
                   services: ['React & Next.js', 'Native Mobile App', 'Cloud Infrafructure', 'API & Database Dev'],
                   tools: ['React', 'Node', 'AWS', 'Swift', 'Kotlin', 'Go'],
-                  accent: 'bg-[#1a1a1a] border border-white/5' 
+                  accent: 'bg-[#151515] border border-white/5' 
                 },
                 { 
                   id: '03', 
@@ -196,7 +207,7 @@ function App() {
                   desc: 'Build production-ready AI—rapid prototyping to deployed models.',
                   services: ['NLP & LLM Training', 'Computer Vision', 'Predictive Analytics', 'AI Strategy'],
                   tools: ['Python', 'PyTorch', 'OpenAI', 'Vertex AI', 'Langchain'],
-                  accent: 'bg-[#1a1a1a] border border-white/5' 
+                  accent: 'bg-[#151515] border border-white/5' 
                 },
                 { 
                   id: '04', 
@@ -204,52 +215,62 @@ function App() {
                   desc: 'Data-driven go-to-market for SaaS and AI—clear positioning, smart pricing.',
                   services: ['Market Analysis', 'Brand Positioning', 'Launch Planning', 'Growth Loops'],
                   tools: ['Segment', 'Amplitude', 'Hubspot', 'Notion'],
-                  accent: 'bg-[#1a1a1a] border border-white/5' 
+                  accent: 'bg-[#151515] border border-white/5' 
                 }
-              ].map((service) => (
-                <div 
-                  key={service.id}
-                  className={`${service.accent} w-[300px] md:w-[450px] h-full rounded-[2.5rem] p-10 flex flex-col justify-between overflow-hidden relative shadow-2xl`}
-                >
-                  <div className="flex justify-between items-start">
-                    {service.id === '01' ? (
-                      <h3 className="text-3xl md:text-4xl font-bold leading-tight">{service.title}</h3>
-                    ) : (
-                      <div className="text-4xl font-bold opacity-80">{service.id}</div>
-                    )}
-                    <span className="text-2xl">↗</span>
-                  </div>
+              ].map((service, i) => {
+                // Per-card entrance animations: Scale and Fade
+                const start = i * 0.2;
+                const end = (i + 1) * 0.25;
+                const scale = useTransform(smoothSectionProg, [start, end], [0.92, 1]);
+                const opacity = useTransform(smoothSectionProg, [start, end], [0.4, 1]);
+                const parallaxX = useTransform(smoothSectionProg, [start, end], [20, 0]);
 
-                  <p className="text-gray-300 text-sm md:text-base leading-relaxed mt-6">
-                    {service.desc}
-                  </p>
-
-                  <div className="mt-10 grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-3">Services</div>
-                      <ul className="text-[11px] md:text-xs text-gray-400 space-y-1">
-                        {service.services.map(s => <li key={s}>{s}</li>)}
-                      </ul>
+                return (
+                  <motion.div 
+                    key={service.id}
+                    style={{ scale, opacity }}
+                    className={`${service.accent} w-[300px] md:w-[450px] h-full rounded-[2.5rem] p-10 flex flex-col justify-between overflow-hidden relative shadow-2xl transition-shadow hover:shadow-purple-500/10`}
+                  >
+                    <div className="flex justify-between items-start">
+                      {service.id === '01' ? (
+                        <h3 className="text-3xl md:text-4xl font-bold leading-tight">{service.title}</h3>
+                      ) : (
+                        <div className="text-4xl font-bold opacity-80">{service.id}</div>
+                      )}
+                      <span className="text-2xl opacity-60 group-hover:opacity-100 transition-opacity">↗</span>
                     </div>
-                    <div>
-                      <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-3">Tools</div>
-                      <div className="grid grid-cols-3 gap-2 opacity-60">
-                        {service.tools.map(t => (
-                          <div key={t} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-[10px] font-bold">
-                            {t.substring(0, 1)}
-                          </div>
-                        ))}
+
+                    <motion.p style={{ x: parallaxX }} className="text-gray-300 text-sm md:text-base leading-relaxed mt-6">
+                      {service.desc}
+                    </motion.p>
+
+                    <div className="mt-10 grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-3">Services</div>
+                        <ul className="text-[11px] md:text-xs text-gray-400 space-y-1">
+                          {service.services.map(s => <li key={s}>{s}</li>)}
+                        </ul>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-3">Tools</div>
+                        <div className="grid grid-cols-3 gap-2 opacity-60">
+                          {service.tools.map(t => (
+                            <div key={t} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-[10px] font-bold">
+                              {t.substring(0, 1)}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  {service.id !== '01' && (
-                    <div className="mt-auto pt-10">
-                      <h3 className="text-xl font-bold">{service.title}</h3>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    
+                    {service.id !== '01' && (
+                      <div className="mt-auto pt-10">
+                        <h3 className="text-xl font-bold">{service.title}</h3>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </motion.div>
           </div>
         </div>
