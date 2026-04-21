@@ -52,19 +52,14 @@ function App() {
       </nav>
 
       {/* Fixed 3D Particle Globe Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center">
-        <motion.div 
-          style={{ x: globeX, y: globeY, scale: globeScale }}
-          className="w-full h-full flex items-center justify-center"
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <Canvas
+          camera={{ position: [0, 0, 8], fov: 45 }}
+          eventSource={document.getElementById('root') as HTMLElement}
+          eventPrefix="client"
         >
-          <Canvas
-            camera={{ position: [0, 0, 8], fov: 45 }}
-            eventSource={document.getElementById('root') as HTMLElement}
-            eventPrefix="client"
-          >
-            <ParticleGlobe />
-          </Canvas>
-        </motion.div>
+          <ParticleGlobe scrollY={smoothScroll} />
+        </Canvas>
       </div>
 
       {/* Hero Section */}
