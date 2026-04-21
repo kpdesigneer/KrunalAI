@@ -237,28 +237,31 @@ export function ParticleGlobe() {
     return { positions: pSphere, posBox: pBox, posHelix: pHelix, sizes: pointSizes };
   }, []);
 
-  // High-fidelity smoothed entry animation using damped harmonic oscillation
-  // This creates a buttery, organic 'settle' rather than a mechanical bounce.
+  // Modern organic zoom entry using elastic damping
   const entryDuration = 4.0; 
-  const entryStartY = 12;
+  const targetScale = 0.8;
 
   useFrame((state) => {
     const prog = smoothProgress.get() * 2.0;
     const elapsed = state.clock.elapsedTime;
 
-    // Fluid entry animation: Soft, positive-only bounce that stays within the 1st section
+    // Organic zoom effect: Scale up from 0 to targetScale with a soft elastic settle
     if (groupRef.current && elapsed < entryDuration) {
       const t = elapsed;
-      // Precision-tuned constants for a 'very very soft' settle that stays above ground
-      const damping = 2.2;   
-      const frequency = 3.8; 
+      const damping = 2.4;   
+      const frequency = 6.5; 
       
       const decay = Math.exp(-damping * t);
-      // Absolute value ensures it stays >= 0, 'bouncing' off the section floor rather than sinking
-      const oscillation = Math.abs(Math.cos(frequency * t));
+      const oscillation = Math.cos(frequency * t);
       
-      groupRef.current.position.y = entryStartY * decay * oscillation;
+      // Multiplier goes from 0 to ~1.0 with a soft overshoot
+      const scaleMultiplier = 1.0 - (decay * oscillation);
+      const currentScale = targetScale * scaleMultiplier;
+      
+      groupRef.current.scale.set(currentScale, currentScale, currentScale);
+      groupRef.current.position.y = 0; // Ensure it stays centered
     } else if (groupRef.current) {
+      groupRef.current.scale.set(targetScale, targetScale, targetScale);
       groupRef.current.position.y = 0;
     }
 
@@ -289,7 +292,7 @@ export function ParticleGlobe() {
   });
 
   return (
-    <group ref={groupRef} scale={[0.8, 0.8, 0.8]} position={[0, 10, 0]}>
+    <group ref={groupRef}>
       <points>
         <bufferGeometry>
           <bufferAttribute 
