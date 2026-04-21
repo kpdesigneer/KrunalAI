@@ -46,7 +46,7 @@ function App() {
   };
   
   return (
-    <div ref={containerRef} className="relative bg-black w-full overflow-x-hidden">
+    <div ref={containerRef} className="relative bg-black w-full">
       {/* 3D PERSISTENT INTERACTIVE LAYER */}
       <div className="fixed inset-0 z-20 pointer-events-none">
         <motion.div 
