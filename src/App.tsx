@@ -26,7 +26,9 @@ function App() {
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 px-8 py-5 flex items-center justify-between bg-black/50 backdrop-blur-md border-b border-white/5">
         <div className="flex items-center gap-10">
-          <div className="text-lg font-bold tracking-[0.15em] uppercase text-white">Krunal AI</div>
+          <div className="text-lg font-bold tracking-[0.15em] text-white">
+            KRUN<span className="text-purple-400">Al</span>
+          </div>
           <div className="hidden md:flex items-center gap-6 text-sm text-gray-400">
             <a href="#work" className="hover:text-white transition-colors duration-300">Work</a>
             <a href="#company" className="hover:text-white transition-colors duration-300">Company</a>
@@ -47,7 +49,9 @@ function App() {
 
         {/* Large faded background brand text */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1] select-none">
-          <span className="text-[12vw] font-bold tracking-[0.15em] uppercase text-white/[0.03] whitespace-nowrap">KRUNAL AI</span>
+          <span className="text-[12vw] font-bold tracking-[0.15em] text-white/[0.03] whitespace-nowrap">
+            KRUN<span className="text-purple-500/20">Al</span>
+          </span>
         </div>
 
         {/* 3D Particle Globe Background */}
@@ -185,7 +189,7 @@ function App() {
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-20 text-sm text-gray-600 flex justify-between">
-          <span>Krunal AI, © 2026. All rights reserved.</span>
+          <span>KRUN<span className="text-purple-400/50">Al</span>, © 2026. All rights reserved.</span>
           <span>Based in India</span>
         </div>
       </footer>
