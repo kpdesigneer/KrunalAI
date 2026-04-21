@@ -1,90 +1,28 @@
-import React, { useRef, useMemo, useState } from 'react';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import React, { useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import { ParticleGlobe } from './components/ParticleGlobe';
 
 function App() {
   const headlineRef = useRef<HTMLHeadingElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const servicesRef = useRef<HTMLDivElement>(null);
-  const rectRef = useRef<DOMRect | null>(null);
-  
-  // 1. GLOBAL SCROLL: Handles Globe migration from Hero -> Section 2
-  const { scrollYProgress: globalScroll } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end end"]
-  });
-  const smoothProg = useSpring(globalScroll, { damping: 25, stiffness: 60 });
-
-  // 2. LOCAL SCROLL: Handles Horizontal Card movement specifically during the 600vh pin
-  const { scrollYProgress: sectionScroll } = useScroll({
-    target: servicesRef,
-    offset: ["start start", "end end"]
-  });
-  // Precision-tuned for a 'GSAP-like' controlled, high-end feel
-  const smoothSectionProg = useSpring(sectionScroll, { damping: 28, stiffness: 45 });
-  
-  const [activeCard, setActiveCard] = useState(0);
-
-  // Globe Orchestration: Position, Scale, and Shape (Morphing)
-  // Transition COMPLETES early (by 0.18) so it stays FIXED during card scroll
-  const globeX = useTransform(smoothProg, [0, 0.18], ["0%", "-28vw"]);
-  const globeY = useTransform(smoothProg, [0, 0.18], ["0px", "100px"]);
-  const globeScale = useTransform(smoothProg, [0, 0.18], [1, 0.85]);
-  const globeShape = useTransform(smoothProg, [0.05, 0.15], [0, 1]); // Sphere -> Box early
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!headlineRef.current) return;
-    
-    // Update rect only if it hasn't been cached yet
-    if (!rectRef.current) {
-      rectRef.current = headlineRef.current.getBoundingClientRect();
-    }
-    
-    const x = e.clientX - rectRef.current.left;
-    const y = e.clientY - rectRef.current.top;
-    
-    // Direct DOM manipulation for zero-lag updates
-    const style = headlineRef.current.style;
-    style.setProperty('--mouse-x', `${x}px`);
-    style.setProperty('--mouse-y', `${y}px`);
-    style.setProperty('--spotlight-opacity', '1');
+    const rect = headlineRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    headlineRef.current.style.setProperty('--mouse-x', `${x}px`);
+    headlineRef.current.style.setProperty('--mouse-y', `${y}px`);
+    headlineRef.current.style.setProperty('--spotlight-opacity', '1');
   };
 
   const handleMouseLeave = () => {
     if (!headlineRef.current) return;
-    rectRef.current = null; // Reset cache on leave to handle layout changes
     headlineRef.current.style.setProperty('--spotlight-opacity', '0');
   };
   
   return (
-    <div 
-      ref={containerRef} 
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="relative bg-black w-full"
-    >
-      {/* 3D PERSISTENT INTERACTIVE LAYER */}
-      <div className="fixed inset-0 z-20 pointer-events-none">
-        <motion.div 
-          style={{ x: globeX, y: globeY, scale: globeScale }}
-          className="w-full h-full flex items-center justify-center translate-y-0"
-        >
-          {/* Dark Glow Occulter - Swallows cards as they pass behind the box */}
-          <motion.div 
-            style={{ opacity: useTransform(smoothProg, [0.05, 0.15], [0, 1]) }}
-            className="absolute w-[100vw] h-[100vh] bg-black [mask-image:radial-gradient(circle_at_center,black_40%,transparent_80%)] z-[-1] pointer-events-none -translate-x-[20%]"
-          />
-          <Canvas
-            camera={{ position: [0, 0, 8], fov: 45 }}
-            eventSource={containerRef as React.RefObject<HTMLElement>}
-            eventPrefix="client"
-          >
-            <ParticleGlobe externalProgress={globeShape} />
-          </Canvas>
-        </motion.div>
-      </div>
-
+    <div className="min-h-screen bg-black w-full overflow-hidden">
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 px-8 py-5 flex items-center justify-between bg-black/50 backdrop-blur-md border-b border-white/5">
         <div className="flex items-center gap-10">
@@ -116,14 +54,28 @@ function App() {
           </span>
         </div>
 
+        {/* 3D Particle Globe Background */}
+        <div className="absolute inset-0 z-[2] pointer-events-none">
+          <Canvas
+            camera={{ position: [0, 0, 8], fov: 45 }}
+            eventSource={document.getElementById('root') as HTMLElement}
+            eventPrefix="client"
+          >
+            <ParticleGlobe />
+          </Canvas>
+        </div>
+
+        {/* Center Headline — overlapping the globe */}
         <motion.div 
-          className="relative z-30 text-center px-4"
+          className="relative z-10 text-center px-4"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: 'easeOut' }}
         >
           <h1 
             ref={headlineRef}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
             className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] animated-gradient-text whitespace-nowrap pb-3 cursor-default"
           >
             I build what others <em className="italic font-extrabold pointer-events-none">imagine.</em>
@@ -170,128 +122,47 @@ function App() {
         </motion.div>
       </section>
 
-      {/* Services Section - Horizontal Scroll Container */}
-      <section id="services" ref={servicesRef} className="relative h-[350vh] z-10 bg-transparent">
-        <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center">
-          {/* Header Info */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 ml-[10vw] md:ml-[35vw] px-8 md:pr-20">
+      {/* Services Section */}
+      <section id="services" className="py-32 px-4 relative z-10 bg-black">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16">
             <div>
               <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 text-white">Our Services</h2>
-              {/* Horizontal Progress Bar */}
-              <div className="h-1 w-48 bg-white/10 rounded-full overflow-hidden mt-2">
-                <motion.div 
-                  style={{ scaleX: smoothSectionProg }}
-                  className="h-full bg-purple-500 origin-left"
-                />
-              </div>
+              <p className="text-xl text-gray-400 max-w-xl">
+                We offer comprehensive digital solutions that transform your business and drive innovation across every touchpoint.
+              </p>
             </div>
-            <p className="text-gray-400 text-sm md:text-base max-w-sm mt-6 md:mt-0">
-              We offer comprehensive digital solutions that transform your business and drive innovation across every touchpoint.
-            </p>
           </div>
 
-          {/* Cards Wrapper */}
-          <div className="relative h-[65vh] w-full overflow-visible z-10">
-            <motion.div 
-              style={{ 
-                x: useTransform(smoothSectionProg, [0, 1], ["0vw", "-85vw"]),
-                z: 0
-              }}
-              className="flex gap-12 absolute left-[15vw] md:left-[35vw] top-0 h-full w-max"
-            >
-              {[
-                { 
-                  id: '01', 
-                  title: 'Product Design', 
-                  desc: 'End-to-end product design—from research and UX flows to polished UI systems and developer-ready handoff.',
-                  services: ['User Research & Strategy', 'UX Flows & Wireframes', 'UI Systems & Prototypes', 'Design Ops & Dev Handoff'],
-                  tools: ['Figma', 'Sketch', 'Adobe XD', 'Blender', 'Spline', 'AE'],
-                  accent: 'bg-gradient-to-br from-[#8b5cf6] via-[#6366f1] to-[#3b82f6] shadow-[0_0_50px_-10px_rgba(139,92,246,0.6)] border-t border-white/20' 
-                },
-                { 
-                  id: '02', 
-                  title: 'Development', 
-                  desc: 'Robust, scalable products across web and mobile—from elegant UIs to reliable APIs and infrastructure.',
-                  services: ['React & Next.js', 'Native Mobile App', 'Cloud Infrafructure', 'API & Database Dev'],
-                  tools: ['React', 'Node', 'AWS', 'Swift', 'Kotlin', 'Go'],
-                  accent: 'bg-[#151515] border border-white/5' 
-                },
-                { 
-                  id: '03', 
-                  title: 'AI Development', 
-                  desc: 'Build production-ready AI—rapid prototyping to deployed models.',
-                  services: ['NLP & LLM Training', 'Computer Vision', 'Predictive Analytics', 'AI Strategy'],
-                  tools: ['Python', 'PyTorch', 'OpenAI', 'Vertex AI', 'Langchain'],
-                  accent: 'bg-[#151515] border border-white/5' 
-                },
-                { 
-                  id: '04', 
-                  title: 'GTM Strategy', 
-                  desc: 'Data-driven go-to-market for SaaS and AI—clear positioning, smart pricing.',
-                  services: ['Market Analysis', 'Brand Positioning', 'Launch Planning', 'Growth Loops'],
-                  tools: ['Segment', 'Amplitude', 'Hubspot', 'Notion'],
-                  accent: 'bg-[#151515] border border-white/5' 
-                }
-              ].map((service, i) => {
-                // Per-card entrance animations: Scale and Fade
-                const start = i * 0.2;
-                const end = (i + 1) * 0.25;
-                const scale = useTransform(smoothSectionProg, [start, end], [0.92, 1]);
-                const opacity = useTransform(smoothSectionProg, [start, end], [0.4, 1]);
-                const parallaxX = useTransform(smoothSectionProg, [start, end], [20, 0]);
-
-                return (
-                  <motion.div 
-                    key={service.id}
-                    onMouseEnter={() => setActiveCard(i)}
-                    onMouseLeave={() => setActiveCard(0)}
-                    style={{ scale, opacity }}
-                    className={`${i === activeCard ? 'bg-gradient-to-br from-[#8b5cf6] via-[#6366f1] to-[#3b82f6] shadow-[0_0_50px_-10px_rgba(139,92,246,0.6)] border-t border-white/20' : 'bg-[#151515] border border-white/5'} w-[300px] md:w-[450px] h-full rounded-[2.5rem] p-10 flex flex-col justify-between overflow-hidden relative shadow-2xl transition-all duration-500 hover:shadow-purple-500/10 group cursor-pointer`}
-                  >
-                    <div className="flex justify-between items-start">
-                      {service.id === '01' ? (
-                        <h3 className="text-3xl md:text-4xl font-bold leading-tight">{service.title}</h3>
-                      ) : (
-                        <div className={`text-4xl font-bold ${i === activeCard ? 'opacity-100' : 'opacity-80'}`}>{service.id}</div>
-                      )}
-                      <span className={`text-2xl ${i === activeCard ? 'opacity-100' : 'opacity-60'} transition-opacity`}>↗</span>
-                    </div>
-
-                    <motion.p 
-                      style={{ x: parallaxX }} 
-                      className={`${i === activeCard ? 'text-white' : 'text-gray-300'} text-sm md:text-base leading-relaxed mt-6 font-medium transition-colors`}
-                    >
-                      {service.desc}
-                    </motion.p>
-
-                    <div className="mt-10 grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-3">Services</div>
-                        <ul className="text-[11px] md:text-xs text-gray-400 space-y-1">
-                          {service.services.map(s => <li key={s}>{s}</li>)}
-                        </ul>
-                      </div>
-                      <div>
-                        <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-3">Tools</div>
-                        <div className="grid grid-cols-3 gap-2 opacity-60">
-                          {service.tools.map(t => (
-                            <div key={t} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-[10px] font-bold">
-                              {t.substring(0, 1)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {service.id !== '01' && (
-                      <div className="mt-auto pt-10">
-                        <h3 className="text-xl font-bold">{service.title}</h3>
-                      </div>
-                    )}
-                  </motion.div>
-                );
-              })}
-            </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Service Cards */}
+            {[
+              { id: '01', title: 'Product Design', desc: 'End-to-end product design—from research and UX flows to polished UI systems.' },
+              { id: '02', title: 'Development', desc: 'Robust, scalable products across web and mobile—from elegant UIs to reliable APIs.' },
+              { id: '03', title: 'GTM Strategy', desc: 'Data-driven go-to-market for SaaS and AI—clear positioning, smart pricing.' },
+              { id: '04', title: 'Healthcare Apps', desc: 'Secure, compliant healthcare software—built for HIPAA and auditability.' },
+              { id: '05', title: 'AI Development', desc: 'Build production-ready AI—rapid prototyping to deployed models.' },
+              { id: '06', title: 'IoT Development', desc: 'From device firmware to cloud ingestion—secure, reliable IoT systems.' },
+            ].map((service) => (
+              <motion.div 
+                key={service.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                whileHover={{ scale: 1.02 }}
+                className="glass-card p-8 group cursor-pointer overflow-hidden relative"
+              >
+                <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="text-sm font-mono text-gray-500 mb-8">{service.id}</div>
+                <h3 className="text-2xl font-semibold mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-400 transition-all">{service.title}</h3>
+                <p className="text-gray-400 leading-relaxed">{service.desc}</p>
+                
+                <div className="mt-8 flex items-center gap-2 text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span>Explore Services</span>
+                  <span>→</span>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
