@@ -7,6 +7,8 @@ const vertexShader = `
   uniform float uTime;
   uniform vec3 uMouse;
   uniform float uProgress;
+  uniform vec3 uRippleOrigin;
+  uniform float uRippleTime;
   
   attribute float size;
   attribute vec3 targetPos1; // Box
@@ -40,32 +42,45 @@ const vertexShader = `
     pos.y += cos(uTime * 1.0 + pos.z * 3.0) * 0.02;
     pos.z += sin(uTime * 0.9 + pos.x * 3.0) * 0.02;
     
-    // Using a 2D penetration map to ensure we touch all depths, but eliminating the geometric "cylinder" artifact via 3D vector inflation natively!
+    // 2D distance so the entire visible front repels uniformly
     float dist = distance(pos.xy, uMouse.xy);
+    // Only repel front-facing particles (z > 0) — back particles stay untouched, no cylinder
+    float frontFace = smoothstep(-0.2, 0.3, pos.z);
     
     // 2D depth tracking strictly stripped of all native parallax mathematical drop-off metrics
     // Buttery smooth structural pointer mapping! 
-    // Wide, gentle interaction radius so the force builds up very gradually over a large area
-    float radius = 0.7;
+    // Wider interaction radius — more particles around the cursor are affected
+    float radius = 1.2;
     float push = smoothstep(radius, 0.0, dist);
-    // Extra cubic easing to make the ramp-up even softer near the edges
-    push = push * push;
     
-    // Extremely gentle cushioning — barely perceptible bounce
-    float bounce = push * (1.0 - push) * 0.015;
+    // Smooth, visible bounce
+    float bounce = push * (1.0 - push) * 0.08;
     
-    // Subtle organic wake — very faint ripple that dissolves softly outward
-    float wakeBounds = max(0.0, 1.0 - (dist / 2.0)); 
+    // Subtle organic wake
+    float wakeBounds = max(0.0, 1.0 - (dist / 2.5)); 
     float naturalRipple = sin(dist * 3.0 - uTime * 1.0 + (pos.x + pos.y) * 1.5) * 0.02 * wakeBounds;
     
-    // Combined force kept deliberately low for a dreamy, gentle drift
+    // Expanding ripple ring effect when cursor leaves an area
+    float rippleAge = uTime - uRippleTime;
+    float rippleDist = distance(pos.xy, uRippleOrigin.xy);
+    float rippleRadius = rippleAge * 1.5; // ring expands outward
+    float rippleWidth = 0.4;
+    float rippleRing = smoothstep(rippleWidth, 0.0, abs(rippleDist - rippleRadius));
+    float rippleFade = max(0.0, 1.0 - rippleAge * 0.8); // fades out over ~1.2 seconds
+    float rippleForce = rippleRing * rippleFade * 0.15 * frontFace;
+    
+    // Combined force — hollow reduced by 50%
     float dynamicForce = (push + bounce + naturalRipple); 
     
     // Soft horizontal displacement direction
     vec3 dir = normalize(vec3(pos.x - uMouse.x, pos.y - uMouse.y, 0.0));
     
-    // Very low force multiplier — particles barely float apart, like breathing
-    pos += dir * dynamicForce * 0.35;
+    // Reduced hollow force + ripple outward push
+    pos += dir * dynamicForce * 0.2 * frontFace;
+    
+    // Add ripple displacement (pushes outward from ripple origin)
+    vec3 rippleDir = normalize(vec3(pos.x - uRippleOrigin.x, pos.y - uRippleOrigin.y, 0.0));
+    pos += rippleDir * rippleForce;
     
     // Assign highlight factor so fragment shader can specifically glow affected particles
     vHighlight = push;
@@ -82,12 +97,11 @@ const vertexShader = `
     // Math to create a shimmering twinkle variation over time unique for sizes
     vTwinkle = (sin(uTime * 1.5 + size * 100.0) * 0.5 + 0.5);
 
-    // Muted grey tones algebraically increased slightly across all boundaries natively (+5% whiteness)
+    // Muted grey tones
     vColor = vec3(0.68, 0.68, 0.68);
     
-    // Massively inflate particles by 250% when highlighted to construct thick volumetric camera bokeh orbs
-    // Overall geometric point footprint explicitly clamped linearly natively across the engine mathematically precisely by -30%
-    gl_PointSize = (size * 3.0576 + vTwinkle * 2.436) * (20.0 / vDepth) * (1.0 + vHighlight * 2.5);
+    // Affected particles double in size (3.0x highlight multiplier), return to normal when cursor moves away
+    gl_PointSize = (size * 3.0576 + vTwinkle * 2.436) * (20.0 / vDepth) * (1.0 + vHighlight * 3.0);
   }
 `;
 
@@ -223,12 +237,10 @@ export function ParticleGlobe() {
     return { positions: pSphere, posBox: pBox, posHelix: pHelix, sizes: pointSizes };
   }, []);
 
+
   useFrame((state) => {
-    // Morph progression based on scroll
-    // 0 = Sphere (top), 1 = Cube (middle), 2 = Helix (bottom)
     const prog = smoothProgress.get() * 2.0;
 
-    // Update Uniforms
     if (shaderRef.current) {
       shaderRef.current.uniforms.uTime.value = state.clock.elapsedTime;
       shaderRef.current.uniforms.uProgress.value = prog;
@@ -241,10 +253,16 @@ export function ParticleGlobe() {
       const pos = state.camera.position.clone().add(dir.multiplyScalar(distance));
       
       const currentMouse = shaderRef.current.uniforms.uMouse.value as THREE.Vector3;
-      // Because the parent group is uniformly scaled by 0.8, we divide the world projection by 0.8
-      // This pins the shader's interaction origin exactly under the tip of the HTML mouse pointer!
       const localPos = pos.clone().divideScalar(0.8);
-      // Very slow, lazy mouse tracking — the interaction point glides gently behind the cursor
+      
+      // Detect significant cursor movement to trigger ripple at the old position
+      const moveDist = currentMouse.distanceTo(localPos);
+      if (moveDist > 0.15) {
+        shaderRef.current.uniforms.uRippleOrigin.value.copy(currentMouse);
+        shaderRef.current.uniforms.uRippleTime.value = state.clock.elapsedTime;
+      }
+      
+      // Lazy mouse tracking
       currentMouse.lerp(localPos, 0.025);
     }
   });
@@ -285,7 +303,9 @@ export function ParticleGlobe() {
           uniforms={{
             uTime: { value: 0 },
             uMouse: { value: new THREE.Vector3(999, 999, 999) },
-            uProgress: { value: 0 }
+            uProgress: { value: 0 },
+            uRippleOrigin: { value: new THREE.Vector3(999, 999, 999) },
+            uRippleTime: { value: -10 }
           }}
           transparent={true}
           depthWrite={false}
