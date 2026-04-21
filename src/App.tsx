@@ -191,7 +191,7 @@ function App() {
                   desc: 'End-to-end product design—from research and UX flows to polished UI systems and developer-ready handoff.',
                   services: ['User Research & Strategy', 'UX Flows & Wireframes', 'UI Systems & Prototypes', 'Design Ops & Dev Handoff'],
                   tools: ['Figma', 'Sketch', 'Adobe XD', 'Blender', 'Spline', 'AE'],
-                  accent: 'bg-gradient-to-br from-[#6366f1] to-[#4f46e5] shadow-[0_0_40px_-10px_rgba(99,102,241,0.5)]' 
+                  accent: 'bg-gradient-to-br from-[#a855f7] to-[#7c3aed] shadow-[0_0_40px_-10px_rgba(168,85,247,0.5)]' 
                 },
                 { 
                   id: '02', 
