@@ -55,8 +55,36 @@ function App() {
       </div>
 
       {/* Navigation */}
+      <nav className="fixed top-0 w-full z-50 px-8 py-5 flex items-center justify-between bg-black/50 backdrop-blur-md border-b border-white/5">
+        <div className="flex items-center gap-10">
+          <div className="text-lg font-bold tracking-[0.15em] text-white">
+            KRUN<span className="text-purple-400">Al</span>
+          </div>
+          <div className="hidden md:flex items-center gap-6 text-sm text-gray-400">
+            <a href="#work" className="hover:text-white transition-colors duration-300">Work</a>
+            <a href="#company" className="hover:text-white transition-colors duration-300">Company</a>
+            <a href="#services" className="hover:text-white transition-colors duration-300">Services</a>
+            <a href="#contact" className="hover:text-white transition-colors duration-300">Contact</a>
+          </div>
+        </div>
+        <a href="#contact" className="group flex items-center gap-2 px-5 py-2.5 text-sm font-medium border border-white/20 rounded-full hover:border-white/50 transition-all duration-300">
+          <span>Start Your Project</span>
+          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold group-hover:scale-110 transition-transform duration-300">↗</span>
+        </a>
+      </nav>
 
-        {/* Center Headline — overlapping the globe */}
+      {/* Hero Section */}
+      <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
+        {/* Ambient Top-Left Purple Light Ray */}
+        <div className="absolute top-[-15%] left-[-10%] w-[50vw] h-[30vw] bg-[#6633ff]/20 blur-[120px] -rotate-45 pointer-events-none z-0" />
+
+        {/* Large faded background brand text */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1] select-none">
+          <span className="text-[12vw] font-bold tracking-[0.15em] text-white/[0.03] whitespace-nowrap">
+            KRUN<span className="text-purple-500/20">Al</span>
+          </span>
+        </div>
+
         <motion.div 
           className="relative z-10 text-center px-4"
           initial={{ opacity: 0, y: 30 }}
