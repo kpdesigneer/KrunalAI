@@ -55,7 +55,7 @@ function App() {
         >
           {/* Dark Glow Occulter - Swallows cards as they pass behind the box */}
           <motion.div 
-            style={{ opacity: useTransform(smoothProg, [0.1, 0.3], [0, 1]) }}
+            style={{ opacity: useTransform(smoothProg, [0.05, 0.15], [0, 1]) }}
             className="absolute w-[100vw] h-[100vh] bg-black [mask-image:radial-gradient(circle_at_center,black_40%,transparent_80%)] z-[-1] pointer-events-none -translate-x-[20%]"
           />
           <Canvas
