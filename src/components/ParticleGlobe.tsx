@@ -238,8 +238,8 @@ export function ParticleGlobe() {
   }, []);
 
   // Modern organic zoom entry using elastic damping
-  const entryDuration = 4.0; 
-  const targetScale = 0.8;
+  const entryDuration = 6.0; 
+  const targetScale = 0.6;
 
   useFrame((state) => {
     const prog = smoothProgress.get() * 2.0;
