@@ -24,28 +24,23 @@
 }
 
 .animated-gradient-text {
-  --mouse-x: -100px;
-  --mouse-y: -100px;
+  --mouse-x: -200px;
+  --mouse-y: -200px;
   --spotlight-opacity: 0;
   
   background: 
     radial-gradient(
-      circle 25px at var(--mouse-x) var(--mouse-y),
-      rgba(167, 139, 250, var(--spotlight-opacity)) 0%,
-      rgba(167, 139, 250, 0) 100%
+      circle 100px at var(--mouse-x) var(--mouse-y),
+      rgba(255, 255, 255, var(--spotlight-opacity)) 0%,
+      rgba(255, 255, 255, 0) 100%
     ),
     linear-gradient(
       90deg,
-      #ffffff 0%,
-      #8b5cf6 25%,
-      #3b82f6 50%,
-      #8b5cf6 75%,
-      #ffffff 100%
+      #4b5563 0%,
+      #4b5563 100%
     );
-  background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: gradient-shift 6s ease-in-out infinite;
-  transition: --spotlight-opacity 0.3s;
+  transition: --spotlight-opacity 0.4s ease;
 }
