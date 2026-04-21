@@ -26,7 +26,7 @@ function App() {
   // Globe Orchestration: Position, Scale, and Shape (Morphing)
   // Transition COMPLETES early (by 0.18) so it stays FIXED during card scroll
   const globeX = useTransform(smoothProg, [0, 0.18], ["0%", "-28vw"]);
-  const globeY = useTransform(smoothProg, [0, 0.18], ["0%", "20%"]);
+  const globeY = useTransform(smoothProg, [0, 0.18], ["0%", "0%"]);
   const globeScale = useTransform(smoothProg, [0, 0.18], [1, 0.85]);
   const globeShape = useTransform(smoothProg, [0.05, 0.15], [0, 1]); // Sphere -> Box early
 
@@ -51,7 +51,7 @@ function App() {
       <div className="fixed inset-0 z-20 pointer-events-none">
         <motion.div 
           style={{ x: globeX, y: globeY, scale: globeScale }}
-          className="w-full h-full flex items-center justify-center translate-y-[calc(-10vh-100px)]"
+          className="w-full h-full flex items-center justify-center translate-y-[-15vh]"
         >
           {/* Dark Glow Occulter - Swallows cards as they pass behind the box */}
           <motion.div 
