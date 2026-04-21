@@ -156,7 +156,7 @@ function App() {
       </section>
 
       {/* Services Section - Horizontal Scroll Container */}
-      <section id="services" ref={servicesRef} className="relative h-[600vh] z-10 bg-transparent">
+      <section id="services" ref={servicesRef} className="relative h-[400vh] z-10 bg-transparent">
         <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center">
           {/* Header Info */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 ml-[10vw] md:ml-[35vw] px-8 md:pr-20">
@@ -179,7 +179,7 @@ function App() {
           <div className="relative h-[65vh] w-full overflow-visible z-10">
             <motion.div 
               style={{ 
-                x: useTransform(smoothSectionProg, [0, 1], ["0vw", "-380vw"]),
+                x: useTransform(smoothSectionProg, [0, 1], ["0vw", "-220vw"]),
                 z: 0
               }}
               className="flex gap-12 absolute left-[15vw] md:left-[35vw] top-0 h-full w-max"
