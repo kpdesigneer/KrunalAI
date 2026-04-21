@@ -237,12 +237,33 @@ export function ParticleGlobe() {
     return { positions: pSphere, posBox: pBox, posHelix: pHelix, sizes: pointSizes };
   }, []);
 
+  // High-fidelity smoothed entry animation using damped harmonic oscillation
+  // This creates a buttery, organic 'settle' rather than a mechanical bounce.
+  const entryDuration = 4.0; 
+  const entryStartY = 12;
 
   useFrame((state) => {
     const prog = smoothProgress.get() * 2.0;
+    const elapsed = state.clock.elapsedTime;
+
+    // Fluid entry animation: Damped oscillation around the target Y=0
+    if (groupRef.current && elapsed < entryDuration) {
+      const t = elapsed; // Time in seconds
+      // Physics constants for a "very very soft" feel
+      const damping = 1.8;   // Controls how slow the settle is
+      const frequency = 4.5; // Controls the speed of the gentle wobble
+      
+      // Calculate the offset using a decaying cosine wave
+      const decay = Math.exp(-damping * t);
+      const oscillation = Math.cos(frequency * t);
+      
+      groupRef.current.position.y = entryStartY * decay * oscillation;
+    } else if (groupRef.current) {
+      groupRef.current.position.y = 0;
+    }
 
     if (shaderRef.current) {
-      shaderRef.current.uniforms.uTime.value = state.clock.elapsedTime;
+      shaderRef.current.uniforms.uTime.value = elapsed;
       shaderRef.current.uniforms.uProgress.value = prog;
       
       // 3D mouse mapping
@@ -259,7 +280,7 @@ export function ParticleGlobe() {
       const moveDist = currentMouse.distanceTo(localPos);
       if (moveDist > 0.15) {
         shaderRef.current.uniforms.uRippleOrigin.value.copy(currentMouse);
-        shaderRef.current.uniforms.uRippleTime.value = state.clock.elapsedTime;
+        shaderRef.current.uniforms.uRippleTime.value = elapsed;
       }
       
       // Lazy mouse tracking
@@ -268,7 +289,7 @@ export function ParticleGlobe() {
   });
 
   return (
-    <group ref={groupRef} scale={[0.8, 0.8, 0.8]}>
+    <group ref={groupRef} scale={[0.8, 0.8, 0.8]} position={[0, 10, 0]}>
       <points>
         <bufferGeometry>
           <bufferAttribute 
