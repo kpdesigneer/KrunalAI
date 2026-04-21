@@ -125,11 +125,11 @@ function App() {
       {/* Services Section */}
       <section id="services" className="py-32 px-4 relative z-10 bg-black">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row">
-          {/* Left 30% Empty space for minimalist aesthetic */}
-          <div className="hidden md:block w-[30%]" />
+          {/* Left 50% Empty space as requested */}
+          <div className="hidden md:block w-[50%]" />
           
-          {/* Right 70% Content area */}
-          <div className="w-full md:w-[70%]">
+          {/* Right 50% Content area */}
+          <div className="w-full md:w-[50%]">
             <div className="mb-16">
               <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 text-white">Our Services</h2>
               <p className="text-xl text-gray-400 max-w-xl">
@@ -137,7 +137,7 @@ function App() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               {/* Service Cards */}
               {[
                 { id: '01', title: 'Product Design', desc: 'End-to-end product design—from research and UX flows to polished UI systems.' },
