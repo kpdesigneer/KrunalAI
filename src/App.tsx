@@ -53,10 +53,10 @@ function App() {
           style={{ x: globeX, y: globeY, scale: globeScale }}
           className="w-full h-full flex items-center justify-center translate-y-[-10vh]"
         >
-          {/* Dark Glow Occulter - Hides cards as they pass behind the box */}
+          {/* Dark Glow Occulter - Swallows cards as they pass behind the box */}
           <motion.div 
             style={{ opacity: useTransform(smoothProg, [0.1, 0.3], [0, 1]) }}
-            className="absolute w-[60vw] h-[60vw] bg-black [mask-image:radial-gradient(circle_at_center,black_30%,transparent_70%)] z-[-1] pointer-events-none"
+            className="absolute w-[100vw] h-[100vh] bg-black [mask-image:radial-gradient(circle_at_center,black_40%,transparent_80%)] z-[-1] pointer-events-none -translate-x-[20%]"
           />
           <Canvas
             camera={{ position: [0, 0, 8], fov: 45 }}

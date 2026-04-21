@@ -22,15 +22,12 @@ const vertexShader = `
   
   void main() {
     float p1 = clamp(uProgress, 0.0, 1.0);
-    float p2 = clamp(uProgress - 1.0, 0.0, 1.0);
     
     // Smooth easing
     p1 = smoothstep(0.0, 1.0, p1);
-    p2 = smoothstep(0.0, 1.0, p2);
 
     vec3 pos = position; // Sphere
     pos = mix(pos, targetPos1, p1);
-    pos = mix(pos, targetPos2, p2);
     
     // Rotate slowly on Y axis
     float angle = uTime * 0.05;
