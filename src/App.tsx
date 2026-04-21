@@ -7,6 +7,7 @@ function App() {
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef<HTMLDivElement>(null);
+  const rectRef = useRef<DOMRect | null>(null);
   
   // 1. GLOBAL SCROLL: Handles Globe migration from Hero -> Section 2
   const { scrollYProgress: globalScroll } = useScroll({
@@ -34,16 +35,25 @@ function App() {
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!headlineRef.current) return;
-    const rect = headlineRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    headlineRef.current.style.setProperty('--mouse-x', `${x}px`);
-    headlineRef.current.style.setProperty('--mouse-y', `${y}px`);
-    headlineRef.current.style.setProperty('--spotlight-opacity', '1');
+    
+    // Update rect only if it hasn't been cached yet
+    if (!rectRef.current) {
+      rectRef.current = headlineRef.current.getBoundingClientRect();
+    }
+    
+    const x = e.clientX - rectRef.current.left;
+    const y = e.clientY - rectRef.current.top;
+    
+    // Direct DOM manipulation for zero-lag updates
+    const style = headlineRef.current.style;
+    style.setProperty('--mouse-x', `${x}px`);
+    style.setProperty('--mouse-y', `${y}px`);
+    style.setProperty('--spotlight-opacity', '1');
   };
 
   const handleMouseLeave = () => {
     if (!headlineRef.current) return;
+    rectRef.current = null; // Reset cache on leave to handle layout changes
     headlineRef.current.style.setProperty('--spotlight-opacity', '0');
   };
   
