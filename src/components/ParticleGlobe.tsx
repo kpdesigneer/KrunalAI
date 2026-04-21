@@ -108,11 +108,11 @@ const vertexShader = `
     // Muted grey tones
     vColor = vec3(0.68, 0.68, 0.68);
     
-    // Dynamically hide 40% of particles during the globe phase (uProgress < 1.0)
+    // Dynamically hide 75% of particles during the globe phase (uProgress < 1.0)
     // As uProgress moves to 1.0 (Box), all particles become visible.
     float visibilitySeed = fract(size * 123.456);
     float globeFade = smoothstep(0.0, 1.0, uProgress);
-    float visibility = mix(step(0.4, visibilitySeed), 1.0, globeFade);
+    float visibility = mix(step(0.75, visibilitySeed), 1.0, globeFade);
     
     // Affected particles double in size, return to normal when cursor moves away
     // Multiplied by visibility to hide them during the globe phase
