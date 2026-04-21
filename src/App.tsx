@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { motion } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import { ParticleGlobe } from './components/ParticleGlobe';
