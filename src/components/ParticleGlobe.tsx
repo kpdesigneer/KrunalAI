@@ -246,16 +246,16 @@ export function ParticleGlobe() {
     const prog = smoothProgress.get() * 2.0;
     const elapsed = state.clock.elapsedTime;
 
-    // Fluid entry animation: Damped oscillation around the target Y=0
+    // Fluid entry animation: Soft, positive-only bounce that stays within the 1st section
     if (groupRef.current && elapsed < entryDuration) {
-      const t = elapsed; // Time in seconds
-      // Physics constants for a "very very soft" feel
-      const damping = 1.8;   // Controls how slow the settle is
-      const frequency = 4.5; // Controls the speed of the gentle wobble
+      const t = elapsed;
+      // Precision-tuned constants for a 'very very soft' settle that stays above ground
+      const damping = 2.2;   
+      const frequency = 3.8; 
       
-      // Calculate the offset using a decaying cosine wave
       const decay = Math.exp(-damping * t);
-      const oscillation = Math.cos(frequency * t);
+      // Absolute value ensures it stays >= 0, 'bouncing' off the section floor rather than sinking
+      const oscillation = Math.abs(Math.cos(frequency * t));
       
       groupRef.current.position.y = entryStartY * decay * oscillation;
     } else if (groupRef.current) {
