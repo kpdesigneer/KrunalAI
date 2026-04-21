@@ -51,7 +51,7 @@ function App() {
       <div className="fixed inset-0 z-20 pointer-events-none">
         <motion.div 
           style={{ x: globeX, y: globeY, scale: globeScale }}
-          className="w-full h-full flex items-center justify-center translate-y-[-5vh]"
+          className="w-full h-full flex items-center justify-center translate-y-0"
         >
           {/* Dark Glow Occulter - Swallows cards as they pass behind the box */}
           <motion.div 
