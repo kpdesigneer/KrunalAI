@@ -24,11 +24,11 @@ function App() {
   const smoothSectionProg = useSpring(sectionScroll, { damping: 28, stiffness: 45 });
 
   // Globe Orchestration: Position, Scale, and Shape (Morphing)
-  // These use the Global scroll to transition early on
-  const globeX = useTransform(smoothProg, [0, 0.2, 0.5], ["0%", "-33%", "-33%"]);
-  const globeY = useTransform(smoothProg, [0, 0.2, 0.5], ["0%", "20%", "20%"]);
-  const globeScale = useTransform(smoothProg, [0, 0.2], [1, 0.85]);
-  const globeShape = useTransform(smoothProg, [0.05, 0.18], [0, 1]); // Sphere -> Box early
+  // Transition COMPLETES early (by 0.18) so it stays FIXED during card scroll
+  const globeX = useTransform(smoothProg, [0, 0.18], ["0%", "-35vw"]);
+  const globeY = useTransform(smoothProg, [0, 0.18], ["0%", "20%"]);
+  const globeScale = useTransform(smoothProg, [0, 0.18], [1, 0.85]);
+  const globeShape = useTransform(smoothProg, [0.05, 0.15], [0, 1]); // Sphere -> Box early
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!headlineRef.current) return;
