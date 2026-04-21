@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion, useScroll, useSpring } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import { ParticleGlobe } from './components/ParticleGlobe';
 
@@ -9,11 +9,6 @@ function App() {
   
   // Smooth scroll-driven position for the globe
   const smoothScroll = useSpring(scrollYProgress, { damping: 20, stiffness: 100 });
-  
-  // Move to left (but not extreme) and stay there
-  const globeX = useTransform(smoothScroll, [0, 0.3], ["0%", "-22%"]);
-  const globeY = useTransform(smoothScroll, [0, 0.3, 0.8], ["0%", "0%", "0%"]);
-  const globeScale = useTransform(smoothScroll, [0, 0.3, 0.8], [1, 1, 1]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!headlineRef.current) return;
