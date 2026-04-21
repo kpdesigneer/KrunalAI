@@ -1,9 +1,25 @@
-
+import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import { ParticleGlobe } from './components/ParticleGlobe';
 
 function App() {
+  const headlineRef = useRef<HTMLHeadingElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!headlineRef.current) return;
+    const rect = headlineRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    headlineRef.current.style.setProperty('--mouse-x', `${x}px`);
+    headlineRef.current.style.setProperty('--mouse-y', `${y}px`);
+    headlineRef.current.style.setProperty('--spotlight-opacity', '1');
+  };
+
+  const handleMouseLeave = () => {
+    if (!headlineRef.current) return;
+    headlineRef.current.style.setProperty('--spotlight-opacity', '0');
+  };
   
   return (
     <div className="min-h-screen bg-black w-full overflow-hidden">
@@ -53,10 +69,12 @@ function App() {
           transition={{ duration: 1, ease: 'easeOut' }}
         >
           <h1 
-            className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] animated-gradient-text whitespace-nowrap pb-3"
-            data-text="I build what others imagine."
+            ref={headlineRef}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] animated-gradient-text whitespace-nowrap pb-3 cursor-default"
           >
-            I build what others <em className="italic font-extrabold">imagine.</em>
+            I build what others <em className="italic font-extrabold pointer-events-none">imagine.</em>
           </h1>
         </motion.div>
 
