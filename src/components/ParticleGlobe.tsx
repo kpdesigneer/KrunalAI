@@ -286,8 +286,8 @@ export function ParticleGlobe() {
         shaderRef.current.uniforms.uRippleTime.value = elapsed;
       }
       
-      // Ultra-responsive tracking (5x faster) — no lag
-      currentMouse.lerp(localPos, 0.6);
+      // Refined responsiveness (3x slower than ultra, but still snappy)
+      currentMouse.lerp(localPos, 0.2);
     }
   });
 
