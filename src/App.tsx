@@ -1,11 +1,9 @@
-import React, { useEffect } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import { ParticleGlobe } from './components/ParticleGlobe';
 
 function App() {
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', '50%']);
   
   return (
     <div className="min-h-screen bg-black w-full overflow-hidden">
