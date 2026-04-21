@@ -158,7 +158,7 @@ function App() {
       </section>
 
       {/* Services Section - Horizontal Scroll Container */}
-      <section id="services" ref={servicesRef} className="relative h-[350vh] z-10 bg-transparent">
+      <section id="services" ref={servicesRef} className="relative h-[400vh] z-10 bg-transparent">
         <div className="sticky top-[50px] h-screen overflow-hidden flex flex-col justify-center">
           {/* Header Info */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 ml-[10vw] md:ml-[35vw] px-8 md:pr-20">
