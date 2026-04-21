@@ -45,29 +45,27 @@ const vertexShader = `
     
     // 2D depth tracking strictly stripped of all native parallax mathematical drop-off metrics
     // Buttery smooth structural pointer mapping! 
-    // Replaced harsh linear boundaries with native 3D spherical 'smoothstep' easing
-    float radius = 0.39; // Radius mapping boundary tightened down a further 20%
+    // Wide, gentle interaction radius so the force builds up very gradually over a large area
+    float radius = 0.7;
     float push = smoothstep(radius, 0.0, dist);
+    // Extra cubic easing to make the ramp-up even softer near the edges
+    push = push * push;
     
-    // Pure, gentle geometric cushioning. 
-    // Uses a soft quadratic interpolation arc rather than rigid sine waves to eliminate all sharp recoil mathematics.
-    float bounce = push * (1.0 - push) * 0.035; // Bounce padding geometrically reduced down tightly by 40%
+    // Extremely gentle cushioning — barely perceptible bounce
+    float bounce = push * (1.0 - push) * 0.015;
     
-    // Organic, fluid wake trailing softly outward. 
-    // Spatial noise breaks up the "perfect artificial ring" look into a smooth natural water-like slosh!
-    float wakeBounds = max(0.0, 1.0 - (dist / 1.5)); 
-    // Animation velocity halved exactly (-50% speed) to gracefully slow down the active particle sloshing frame rate
-    float naturalRipple = sin(dist * 5.0 - uTime * 2.0 + (pos.x + pos.y) * 2.0) * 0.06 * wakeBounds;
+    // Subtle organic wake — very faint ripple that dissolves softly outward
+    float wakeBounds = max(0.0, 1.0 - (dist / 2.0)); 
+    float naturalRipple = sin(dist * 3.0 - uTime * 1.0 + (pos.x + pos.y) * 1.5) * 0.02 * wakeBounds;
     
-    // Pure unadulterated absolute force application perfectly eliminating previous relative Z-depth physics entirely
+    // Combined force kept deliberately low for a dreamy, gentle drift
     float dynamicForce = (push + bounce + naturalRipple); 
     
-    // Pure horizontal translation vector stripped of any Z-depth displacement offsets 
-    // Particles exclusively slide cleanly out of the cursor bounds instead of blooming backwards/forwards into the camera depth!
+    // Soft horizontal displacement direction
     vec3 dir = normalize(vec3(pos.x - uMouse.x, pos.y - uMouse.y, 0.0));
     
-    // Executes an incredibly soft sweeping trajectory! Absolute displacement force bounds mathematically halved!
-    pos += dir * dynamicForce * 1.0;
+    // Very low force multiplier — particles barely float apart, like breathing
+    pos += dir * dynamicForce * 0.35;
     
     // Assign highlight factor so fragment shader can specifically glow affected particles
     vHighlight = push;
@@ -246,8 +244,8 @@ export function ParticleGlobe() {
       // Because the parent group is uniformly scaled by 0.8, we divide the world projection by 0.8
       // This pins the shader's interaction origin exactly under the tip of the HTML mouse pointer!
       const localPos = pos.clone().divideScalar(0.8);
-      // Interpolation matrix smoothed dynamically right down to exactly exactly 50% (-50% hover velocity drag physics)
-      currentMouse.lerp(localPos, 0.05);
+      // Very slow, lazy mouse tracking — the interaction point glides gently behind the cursor
+      currentMouse.lerp(localPos, 0.025);
     }
   });
 
