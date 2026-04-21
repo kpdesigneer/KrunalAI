@@ -25,7 +25,7 @@ function App() {
 
   // Globe Orchestration: Position, Scale, and Shape (Morphing)
   // Transition COMPLETES early (by 0.18) so it stays FIXED during card scroll
-  const globeX = useTransform(smoothProg, [0, 0.18], ["0%", "-35vw"]);
+  const globeX = useTransform(smoothProg, [0, 0.18], ["0%", "-28vw"]);
   const globeY = useTransform(smoothProg, [0, 0.18], ["0%", "20%"]);
   const globeScale = useTransform(smoothProg, [0, 0.18], [1, 0.85]);
   const globeShape = useTransform(smoothProg, [0.05, 0.15], [0, 1]); // Sphere -> Box early
