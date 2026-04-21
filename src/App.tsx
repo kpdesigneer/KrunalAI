@@ -48,7 +48,12 @@ function App() {
   };
   
   return (
-    <div ref={containerRef} className="relative bg-black w-full">
+    <div 
+      ref={containerRef} 
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="relative bg-black w-full"
+    >
       {/* 3D PERSISTENT INTERACTIVE LAYER */}
       <div className="fixed inset-0 z-20 pointer-events-none">
         <motion.div 
@@ -109,8 +114,6 @@ function App() {
         >
           <h1 
             ref={headlineRef}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
             className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] animated-gradient-text whitespace-nowrap pb-3 cursor-default"
           >
             I build what others <em className="italic font-extrabold pointer-events-none">imagine.</em>
@@ -158,8 +161,8 @@ function App() {
       </section>
 
       {/* Services Section - Horizontal Scroll Container */}
-      <section id="services" ref={servicesRef} className="relative h-[400vh] z-10 bg-transparent">
-        <div className="sticky top-[50px] h-screen overflow-hidden flex flex-col justify-center">
+      <section id="services" ref={servicesRef} className="relative h-[350vh] z-10 bg-transparent">
+        <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center">
           {/* Header Info */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 ml-[10vw] md:ml-[35vw] px-8 md:pr-20">
             <div>
