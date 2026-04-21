@@ -1,10 +1,19 @@
 import React, { useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import { ParticleGlobe } from './components/ParticleGlobe';
 
 function App() {
   const headlineRef = useRef<HTMLHeadingElement>(null);
+  const { scrollYProgress } = useScroll();
+  
+  // Smooth scroll-driven position for the globe
+  const smoothScroll = useSpring(scrollYProgress, { damping: 20, stiffness: 100 });
+  
+  // Move to left (but not extreme) and stay there
+  const globeX = useTransform(smoothScroll, [0, 0.3], ["0%", "-22%"]);
+  const globeY = useTransform(smoothScroll, [0, 0.3, 0.8], ["0%", "0%", "0%"]);
+  const globeScale = useTransform(smoothScroll, [0, 0.3, 0.8], [1, 1, 1]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!headlineRef.current) return;
@@ -42,20 +51,12 @@ function App() {
         </a>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
-        {/* Ambient Top-Left Purple Light Ray */}
-        <div className="absolute top-[-15%] left-[-10%] w-[50vw] h-[30vw] bg-[#6633ff]/20 blur-[120px] -rotate-45 pointer-events-none z-0" />
-
-        {/* Large faded background brand text */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1] select-none">
-          <span className="text-[12vw] font-bold tracking-[0.15em] text-white/[0.03] whitespace-nowrap">
-            KRUN<span className="text-purple-500/20">Al</span>
-          </span>
-        </div>
-
-        {/* 3D Particle Globe Background */}
-        <div className="absolute inset-0 z-[2] pointer-events-none">
+      {/* Fixed 3D Particle Globe Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center">
+        <motion.div 
+          style={{ x: globeX, y: globeY, scale: globeScale }}
+          className="w-full h-full flex items-center justify-center"
+        >
           <Canvas
             camera={{ position: [0, 0, 8], fov: 45 }}
             eventSource={document.getElementById('root') as HTMLElement}
@@ -63,7 +64,14 @@ function App() {
           >
             <ParticleGlobe />
           </Canvas>
-        </div>
+        </motion.div>
+      </div>
+
+      {/* Hero Section */}
+      <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden z-10">
+        {/* Ambient Top-Left Purple Light Ray */}
+        <div className="absolute top-[-15%] left-[-10%] w-[50vw] h-[30vw] bg-[#6633ff]/20 blur-[120px] -rotate-45 pointer-events-none z-0" />
+
 
         {/* Center Headline — overlapping the globe */}
         <motion.div 
@@ -123,7 +131,7 @@ function App() {
       </section>
 
       {/* Services Section */}
-      <section id="services" className="py-32 px-4 relative z-10 bg-black">
+      <section id="services" className="py-32 px-4 relative z-10 bg-transparent">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row">
           {/* Left 50% Empty space as requested */}
           <div className="hidden md:block w-[50%]" />
@@ -137,7 +145,7 @@ function App() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Service Cards */}
               {[
                 { id: '01', title: 'Product Design', desc: 'End-to-end product design—from research and UX flows to polished UI systems.' },
@@ -150,19 +158,29 @@ function App() {
                 <motion.div 
                   key={service.id}
                   initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  whileInView={{ opacity: 0.5, y: 0 }}
                   viewport={{ once: true }}
-                  whileHover={{ scale: 1.02 }}
-                  className="glass-card p-8 group cursor-pointer overflow-hidden relative"
+                  whileHover={{ 
+                    scale: 1.03,
+                    translateY: -5,
+                    opacity: 1,
+                    transition: { duration: 0.3, ease: "easeOut" }
+                  }}
+                  className="glass-card p-8 group cursor-pointer overflow-hidden relative border border-white/5 hover:border-white/20 hover:bg-white/[0.03] transition-all duration-500 rounded-2xl shadow-none hover:shadow-2xl hover:shadow-purple-500/10"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="text-sm font-mono text-gray-500 mb-8">{service.id}</div>
-                  <h3 className="text-2xl font-semibold mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-400 transition-all">{service.title}</h3>
-                  <p className="text-gray-400 leading-relaxed">{service.desc}</p>
+                  {/* Animated vibrant inner glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-transparent to-blue-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[length:200%_200%] animate-[gradient-shift_5s_ease_infinite]" />
                   
-                  <div className="mt-8 flex items-center gap-2 text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span>Explore Services</span>
-                    <span>→</span>
+                  {/* Animated border line on hover */}
+                  <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+
+                  <div className="text-sm font-mono text-gray-500 mb-8 group-hover:text-purple-400 transition-colors duration-300">{service.id}</div>
+                  <h3 className="text-2xl font-semibold mb-4 text-white/90 group-hover:text-white transition-all duration-300">{service.title}</h3>
+                  <p className="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors duration-300">{service.desc}</p>
+                  
+                  <div className="mt-8 flex items-center gap-2 text-sm font-medium text-white/60 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                    <span className="group-hover:text-white">Explore Services</span>
+                    <span className="group-hover:translate-x-1 transition-transform">→</span>
                   </div>
                 </motion.div>
               ))}
