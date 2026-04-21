@@ -206,7 +206,7 @@ function App() {
       <footer className="border-t border-white/10 pt-20 pb-10 px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">
           <div>
-            <h2 className="text-3xl font-bold mb-6">We turn bold ideas into powerful digital realities.</h2>
+            <h2 className="text-3xl font-bold mb-6">Bold ideas are easy. I make them real.</h2>
             <button className="px-6 py-3 bg-white text-black rounded-full font-medium hover:scale-105 transition-transform">
               Let's work together
             </button>
