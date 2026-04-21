@@ -17,11 +17,11 @@ function App() {
   const smoothProg = useSpring(scrollYProgress, { damping: 25, stiffness: 60 });
 
   // Globe Orchestration: Position, Scale, and Shape (Morphing)
-  // Transition kicks in around 25% of the page scroll (entering 2nd section)
-  const globeX = useTransform(smoothProg, [0, 0.3, 0.8], ["0%", "-32%", "-32%"]);
-  const globeY = useTransform(smoothProg, [0, 0.3, 0.8], ["0%", "20%", "20%"]);
-  const globeScale = useTransform(smoothProg, [0, 0.3], [1, 0.85]);
-  const globeShape = useTransform(smoothProg, [0.1, 0.35], [0, 1]); // 0 = Sphere, 1 = Box
+  // Transition kicks in around 20% of the page scroll (entering 2nd section)
+  const globeX = useTransform(smoothProg, [0, 0.25, 0.85], ["0%", "-32%", "-32%"]);
+  const globeY = useTransform(smoothProg, [0, 0.25, 0.85], ["0%", "20%", "20%"]);
+  const globeScale = useTransform(smoothProg, [0, 0.25], [1, 0.85]);
+  const globeShape = useTransform(smoothProg, [0.1, 0.3], [0, 1]); // 0 = Sphere, 1 = Box
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!headlineRef.current) return;
@@ -46,6 +46,11 @@ function App() {
           style={{ x: globeX, y: globeY, scale: globeScale }}
           className="w-full h-full flex items-center justify-center translate-y-[-10vh]"
         >
+          {/* Dark Glow Occulter - Hides cards as they pass behind the box */}
+          <motion.div 
+            style={{ opacity: useTransform(smoothProg, [0.1, 0.3], [0, 1]) }}
+            className="absolute w-[60vw] h-[60vw] bg-black [mask-image:radial-gradient(circle_at_center,black_30%,transparent_70%)] z-[-1] pointer-events-none"
+          />
           <Canvas
             camera={{ position: [0, 0, 8], fov: 45 }}
             eventSource={containerRef as React.RefObject<HTMLElement>}
@@ -144,7 +149,7 @@ function App() {
       </section>
 
       {/* Services Section - Horizontal Scroll Container */}
-      <section id="services" className="relative h-[400vh] z-10 bg-transparent">
+      <section id="services" className="relative h-[600vh] z-10 bg-transparent">
         <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center px-8 md:px-20">
           {/* Header Info */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 ml-[45%] md:ml-[35%] pr-10">
@@ -159,7 +164,7 @@ function App() {
           {/* Cards Wrapper */}
           <div className="relative h-[65vh] w-full overflow-visible z-10">
             <motion.div 
-              style={{ x: useTransform(smoothProg, [0.15, 0.9], ["0%", "-250%"]) }}
+              style={{ x: useTransform(smoothProg, [0.25, 0.95], ["0%", "-380%"]) }}
               className="flex gap-10 absolute left-[38%] md:left-[32%] top-0 h-full w-max ml-[15vw]"
             >
               {[
