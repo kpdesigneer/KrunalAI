@@ -45,21 +45,26 @@ function App() {
     <div className="min-h-screen bg-black w-full overflow-hidden">
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 px-8 py-5 flex items-center justify-between bg-black/50 backdrop-blur-md border-b border-white/5">
-        <div className="flex items-center gap-10">
-          <div className="text-lg font-bold tracking-[0.15em] text-white">
-            KRUN<span className="text-purple-400">Al</span>
-          </div>
-          <div className="hidden md:flex items-center gap-6 text-sm text-gray-400">
-            <a href="#work" className="hover:text-white transition-colors duration-300">Work</a>
-            <a href="#company" className="hover:text-white transition-colors duration-300">Company</a>
-            <a href="#services" className="hover:text-white transition-colors duration-300">Services</a>
-            <a href="#contact" className="hover:text-white transition-colors duration-300">Contact</a>
-          </div>
+        {/* Logo (Left) */}
+        <div className="text-lg font-bold tracking-[0.15em] text-white min-w-[150px]">
+          KRUN<span className="text-purple-400">Al</span>
         </div>
-        <a href="#contact" className="group flex items-center gap-2 px-5 py-2.5 text-sm font-medium border border-white/20 rounded-full hover:border-white/50 transition-all duration-300">
-          <span>Start Your Project</span>
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold group-hover:scale-110 transition-transform duration-300">↗</span>
-        </a>
+
+        {/* Navigation Links (Center) */}
+        <div className="hidden md:flex items-center gap-2 text-sm text-gray-400 font-medium">
+          <a href="#work" className="px-4 py-2 rounded hover:bg-zinc-800 hover:text-white transition-all duration-300">Work</a>
+          <a href="#company" className="px-4 py-2 rounded hover:bg-zinc-800 hover:text-white transition-all duration-300">Company</a>
+          <a href="#services" className="px-4 py-2 rounded hover:bg-zinc-800 hover:text-white transition-all duration-300">Services</a>
+          <a href="#contact" className="px-4 py-2 rounded hover:bg-zinc-800 hover:text-white transition-all duration-300">Contact</a>
+        </div>
+
+        {/* CTA Button (Right) */}
+        <div className="min-w-[150px] flex justify-end">
+          <a href="#contact" className="group flex items-center gap-2 px-5 py-2.5 text-sm font-medium border border-white/20 rounded-full hover:border-white/50 transition-all duration-300">
+            <span>Start Your Project</span>
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold group-hover:scale-110 transition-transform duration-300">↗</span>
+          </a>
+        </div>
       </nav>
 
       {/* Fixed 3D Particle Globe Background */}
@@ -137,7 +142,7 @@ function App() {
       </section>
 
       {/* Services Section */}
-      <section id="services" className="py-32 px-4 relative z-10 bg-transparent">
+      <section id="services" className="pt-32 pb-64 px-4 relative z-10 bg-transparent">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row">
           {/* Left 50% Empty space as requested */}
           <div className="hidden md:block w-[50%]" />

@@ -247,7 +247,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
         // Wider spread, shorter height for blunter angles
         cx = -1.5 + (t > 0.5 ? (t - 0.5) * 1.5 : (0.5 - t) * 1.5);
         cy = (t - 0.5) * 2.0; 
-        cx -= 1.0; 
+        cx -= 0.5; // Brought even closer from 0.7
         cx += (Math.random() - 0.5) * thickness;
         cy += (Math.random() - 0.5) * thickness;
       } else if (group === 1) { // /
@@ -259,7 +259,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
         const t = Math.random();
         cx = 1.5 - (t > 0.5 ? (t - 0.5) * 1.5 : (0.5 - t) * 1.5);
         cy = (t - 0.5) * 2.0; 
-        cx += 1.0; 
+        cx += 0.5; // Brought even closer from 0.7
         cx += (Math.random() - 0.5) * thickness;
         cy += (Math.random() - 0.5) * thickness;
       }
@@ -310,7 +310,10 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       
       groupRef.current.scale.set(finalScale, finalScale, finalScale);
       groupRef.current.position.x = targetX;
-      groupRef.current.position.y = 0;
+      
+      // Footer Exit: Move the chevron upward with the page flow (0.8+)
+      const exitY = sVal > 0.8 ? (sVal - 0.8) / 0.2 * 15.0 : 0;
+      groupRef.current.position.y = exitY;
       
       // Counter-rotation to fix perspective distortion when on the left
       // As it moves to targetX (-3.2), rotate it by ~22 degrees (0.38 rad) 
