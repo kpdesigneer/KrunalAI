@@ -191,7 +191,7 @@ function App() {
                   desc: 'End-to-end product design—from research and UX flows to polished UI systems and developer-ready handoff.',
                   services: ['User Research & Strategy', 'UX Flows & Wireframes', 'UI Systems & Prototypes', 'Design Ops & Dev Handoff'],
                   tools: ['Figma', 'Sketch', 'Adobe XD', 'Blender', 'Spline', 'AE'],
-                  accent: 'bg-[#3b3b8e]' 
+                  accent: 'bg-gradient-to-br from-[#6366f1] to-[#4f46e5] shadow-[0_0_40px_-10px_rgba(99,102,241,0.5)]' 
                 },
                 { 
                   id: '02', 
@@ -240,7 +240,10 @@ function App() {
                       <span className="text-2xl opacity-60 group-hover:opacity-100 transition-opacity">↗</span>
                     </div>
 
-                    <motion.p style={{ x: parallaxX }} className="text-gray-300 text-sm md:text-base leading-relaxed mt-6">
+                    <motion.p 
+                      style={{ x: parallaxX }} 
+                      className={`${service.id === '01' ? 'text-white' : 'text-gray-300'} text-sm md:text-base leading-relaxed mt-6 font-medium`}
+                    >
                       {service.desc}
                     </motion.p>
 
