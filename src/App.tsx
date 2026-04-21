@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import { ParticleGlobe } from './components/ParticleGlobe';
@@ -22,6 +22,8 @@ function App() {
   });
   // Precision-tuned for a 'GSAP-like' controlled, high-end feel
   const smoothSectionProg = useSpring(sectionScroll, { damping: 28, stiffness: 45 });
+  
+  const [activeCard, setActiveCard] = useState(0);
 
   // Globe Orchestration: Position, Scale, and Shape (Morphing)
   // Transition COMPLETES early (by 0.18) so it stays FIXED during card scroll
@@ -228,21 +230,23 @@ function App() {
                 return (
                   <motion.div 
                     key={service.id}
+                    onMouseEnter={() => setActiveCard(i)}
+                    onMouseLeave={() => setActiveCard(0)}
                     style={{ scale, opacity }}
-                    className={`${service.accent} w-[300px] md:w-[450px] h-full rounded-[2.5rem] p-10 flex flex-col justify-between overflow-hidden relative shadow-2xl transition-shadow hover:shadow-purple-500/10`}
+                    className={`${i === activeCard ? 'bg-gradient-to-br from-[#8b5cf6] via-[#6366f1] to-[#3b82f6] shadow-[0_0_50px_-10px_rgba(139,92,246,0.6)] border-t border-white/20' : 'bg-[#151515] border border-white/5'} w-[300px] md:w-[450px] h-full rounded-[2.5rem] p-10 flex flex-col justify-between overflow-hidden relative shadow-2xl transition-all duration-500 hover:shadow-purple-500/10 group cursor-pointer`}
                   >
                     <div className="flex justify-between items-start">
                       {service.id === '01' ? (
                         <h3 className="text-3xl md:text-4xl font-bold leading-tight">{service.title}</h3>
                       ) : (
-                        <div className="text-4xl font-bold opacity-80">{service.id}</div>
+                        <div className={`text-4xl font-bold ${i === activeCard ? 'opacity-100' : 'opacity-80'}`}>{service.id}</div>
                       )}
-                      <span className="text-2xl opacity-60 group-hover:opacity-100 transition-opacity">↗</span>
+                      <span className={`text-2xl ${i === activeCard ? 'opacity-100' : 'opacity-60'} transition-opacity`}>↗</span>
                     </div>
 
                     <motion.p 
                       style={{ x: parallaxX }} 
-                      className={`${service.id === '01' ? 'text-white' : 'text-gray-300'} text-sm md:text-base leading-relaxed mt-6 font-medium`}
+                      className={`${i === activeCard ? 'text-white' : 'text-gray-300'} text-sm md:text-base leading-relaxed mt-6 font-medium transition-colors`}
                     >
                       {service.desc}
                     </motion.p>
