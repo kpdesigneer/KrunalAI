@@ -1,7 +1,7 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useScroll, useSpring } from 'framer-motion';
+import { MotionValue, useMotionValue } from 'framer-motion';
 
 const vertexShader = `
   uniform float uTime;
@@ -161,14 +161,14 @@ const glowFragmentShader = `
   }
 `;
 
-export function ParticleGlobe() {
+
+export function ParticleGlobe({ externalProgress }: { externalProgress?: MotionValue<number> }) {
   const shaderRef = useRef<THREE.ShaderMaterial>(null);
   const groupRef = useRef<THREE.Group>(null);
   
-  // Track scrolling to morph shapes
-  const { scrollYProgress } = useScroll();
-  // Gravity/Stiffness increased by 30%
-  const smoothProgress = useSpring(scrollYProgress, { damping: 26, stiffness: 52 });
+  // Use external progress if provided, otherwise default to 0
+  const fallbackProgress = useMotionValue(0);
+  const activeProgress = externalProgress || fallbackProgress;
 
   const particleCount = 3136; // Absolute mathematical graphic limit array dynamically shaved cleanly strictly natively by exactly -20%
 
@@ -242,7 +242,7 @@ export function ParticleGlobe() {
   const targetScale = 0.8;
 
   useFrame((state) => {
-    const prog = smoothProgress.get() * 2.0;
+    const prog = activeProgress.get() * 2.0;
     const elapsed = state.clock.elapsedTime;
 
     // Organic zoom-out: Scale down from a large size to targetScale

@@ -1,10 +1,27 @@
-import React, { useRef } from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef, useMemo } from 'react';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import { ParticleGlobe } from './components/ParticleGlobe';
 
 function App() {
   const headlineRef = useRef<HTMLHeadingElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // High-precision scroll tracking for global transitions
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
+
+  // Smooth out the scroll delta for buttery transitions
+  const smoothProg = useSpring(scrollYProgress, { damping: 25, stiffness: 60 });
+
+  // Globe Orchestration: Position, Scale, and Shape (Morphing)
+  // Transition kicks in around 25% of the page scroll (entering 2nd section)
+  const globeX = useTransform(smoothProg, [0, 0.35, 1], ["0%", "-35%", "-35%"]);
+  const globeY = useTransform(smoothProg, [0, 0.35, 1], ["0%", "20%", "20%"]);
+  const globeScale = useTransform(smoothProg, [0, 0.35], [1, 0.9]);
+  const globeShape = useTransform(smoothProg, [0.1, 0.35], [0, 1]); // 0 = Sphere, 1 = Box
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!headlineRef.current) return;
@@ -22,48 +39,22 @@ function App() {
   };
   
   return (
-    <div className="min-h-screen bg-black w-full overflow-hidden">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 px-8 py-5 flex items-center justify-between bg-black/50 backdrop-blur-md border-b border-white/5">
-        <div className="flex items-center gap-10">
-          <div className="text-lg font-bold tracking-[0.15em] text-white">
-            KRUN<span className="text-purple-400">Al</span>
-          </div>
-          <div className="hidden md:flex items-center gap-6 text-sm text-gray-400">
-            <a href="#work" className="hover:text-white transition-colors duration-300">Work</a>
-            <a href="#company" className="hover:text-white transition-colors duration-300">Company</a>
-            <a href="#services" className="hover:text-white transition-colors duration-300">Services</a>
-            <a href="#contact" className="hover:text-white transition-colors duration-300">Contact</a>
-          </div>
-        </div>
-        <a href="#contact" className="group flex items-center gap-2 px-5 py-2.5 text-sm font-medium border border-white/20 rounded-full hover:border-white/50 transition-all duration-300">
-          <span>Start Your Project</span>
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold group-hover:scale-110 transition-transform duration-300">↗</span>
-        </a>
-      </nav>
-
-      {/* Hero Section */}
-      <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
-        {/* Ambient Top-Left Purple Light Ray */}
-        <div className="absolute top-[-15%] left-[-10%] w-[50vw] h-[30vw] bg-[#6633ff]/20 blur-[120px] -rotate-45 pointer-events-none z-0" />
-
-        {/* Large faded background brand text */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[1] select-none">
-          <span className="text-[12vw] font-bold tracking-[0.15em] text-white/[0.03] whitespace-nowrap">
-            KRUN<span className="text-purple-500/20">Al</span>
-          </span>
-        </div>
-
-        {/* 3D Particle Globe Background */}
-        <div className="absolute inset-0 z-[2] pointer-events-none">
+    <div ref={containerRef} className="relative bg-black w-full overflow-x-hidden">
+      {/* 3D PERSISTENT BACKGROUND LAYER */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <motion.div 
+          style={{ x: globeX, y: globeY, scale: globeScale }}
+          className="w-full h-full flex items-center justify-center translate-y-[-10vh]"
+        >
           <Canvas
             camera={{ position: [0, 0, 8], fov: 45 }}
-            eventSource={document.getElementById('root') as HTMLElement}
-            eventPrefix="client"
           >
-            <ParticleGlobe />
+            <ParticleGlobe externalProgress={globeShape} />
           </Canvas>
-        </div>
+        </motion.div>
+      </div>
+
+      {/* Navigation */}
 
         {/* Center Headline — overlapping the globe */}
         <motion.div 
@@ -122,47 +113,103 @@ function App() {
         </motion.div>
       </section>
 
-      {/* Services Section */}
-      <section id="services" className="py-32 px-4 relative z-10 bg-black">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16">
+      {/* Services Section - Horizontal Scroll Container */}
+      <section id="services" className="relative h-[400vh] z-10 bg-transparent">
+        <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center px-8 md:px-20">
+          {/* Header Info */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 ml-[45%] md:ml-[35%] pr-10">
             <div>
               <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 text-white">Our Services</h2>
-              <p className="text-xl text-gray-400 max-w-xl">
-                We offer comprehensive digital solutions that transform your business and drive innovation across every touchpoint.
-              </p>
             </div>
+            <p className="text-gray-400 text-sm md:text-base max-w-sm ml-auto">
+              We offer comprehensive digital solutions that transform your business and drive innovation across every touchpoint.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Service Cards */}
-            {[
-              { id: '01', title: 'Product Design', desc: 'End-to-end product design—from research and UX flows to polished UI systems.' },
-              { id: '02', title: 'Development', desc: 'Robust, scalable products across web and mobile—from elegant UIs to reliable APIs.' },
-              { id: '03', title: 'GTM Strategy', desc: 'Data-driven go-to-market for SaaS and AI—clear positioning, smart pricing.' },
-              { id: '04', title: 'Healthcare Apps', desc: 'Secure, compliant healthcare software—built for HIPAA and auditability.' },
-              { id: '05', title: 'AI Development', desc: 'Build production-ready AI—rapid prototyping to deployed models.' },
-              { id: '06', title: 'IoT Development', desc: 'From device firmware to cloud ingestion—secure, reliable IoT systems.' },
-            ].map((service) => (
-              <motion.div 
-                key={service.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                whileHover={{ scale: 1.02 }}
-                className="glass-card p-8 group cursor-pointer overflow-hidden relative"
-              >
-                <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="text-sm font-mono text-gray-500 mb-8">{service.id}</div>
-                <h3 className="text-2xl font-semibold mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-400 transition-all">{service.title}</h3>
-                <p className="text-gray-400 leading-relaxed">{service.desc}</p>
-                
-                <div className="mt-8 flex items-center gap-2 text-sm text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span>Explore Services</span>
-                  <span>→</span>
+          {/* Cards Wrapper */}
+          <div className="relative h-[65vh] w-full overflow-visible">
+            <motion.div 
+              style={{ x: useTransform(smoothProg, [0.35, 1], ["0%", "-150%"]) }}
+              className="flex gap-8 absolute left-[45%] md:left-[35%] top-0 h-full w-max"
+            >
+              {[
+                { 
+                  id: '01', 
+                  title: 'Product Design', 
+                  desc: 'End-to-end product design—from research and UX flows to polished UI systems and developer-ready handoff.',
+                  services: ['User Research & Strategy', 'UX Flows & Wireframes', 'UI Systems & Prototypes', 'Design Ops & Dev Handoff'],
+                  tools: ['Figma', 'Sketch', 'Adobe XD', 'Blender', 'Spline', 'AE'],
+                  accent: 'bg-[#3b3b8e]' 
+                },
+                { 
+                  id: '02', 
+                  title: 'Development', 
+                  desc: 'Robust, scalable products across web and mobile—from elegant UIs to reliable APIs and infrastructure.',
+                  services: ['React & Next.js', 'Native Mobile App', 'Cloud Infrafructure', 'API & Database Dev'],
+                  tools: ['React', 'Node', 'AWS', 'Swift', 'Kotlin', 'Go'],
+                  accent: 'bg-[#1a1a1a] border border-white/5' 
+                },
+                { 
+                  id: '03', 
+                  title: 'AI Development', 
+                  desc: 'Build production-ready AI—rapid prototyping to deployed models.',
+                  services: ['NLP & LLM Training', 'Computer Vision', 'Predictive Analytics', 'AI Strategy'],
+                  tools: ['Python', 'PyTorch', 'OpenAI', 'Vertex AI', 'Langchain'],
+                  accent: 'bg-[#1a1a1a] border border-white/5' 
+                },
+                { 
+                  id: '04', 
+                  title: 'GTM Strategy', 
+                  desc: 'Data-driven go-to-market for SaaS and AI—clear positioning, smart pricing.',
+                  services: ['Market Analysis', 'Brand Positioning', 'Launch Planning', 'Growth Loops'],
+                  tools: ['Segment', 'Amplitude', 'Hubspot', 'Notion'],
+                  accent: 'bg-[#1a1a1a] border border-white/5' 
+                }
+              ].map((service) => (
+                <div 
+                  key={service.id}
+                  className={`${service.accent} w-[300px] md:w-[450px] h-full rounded-[2.5rem] p-10 flex flex-col justify-between overflow-hidden relative shadow-2xl`}
+                >
+                  <div className="flex justify-between items-start">
+                    {service.id === '01' ? (
+                      <h3 className="text-3xl md:text-4xl font-bold leading-tight">{service.title}</h3>
+                    ) : (
+                      <div className="text-4xl font-bold opacity-80">{service.id}</div>
+                    )}
+                    <span className="text-2xl">↗</span>
+                  </div>
+
+                  <p className="text-gray-300 text-sm md:text-base leading-relaxed mt-6">
+                    {service.desc}
+                  </p>
+
+                  <div className="mt-10 grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-3">Services</div>
+                      <ul className="text-[11px] md:text-xs text-gray-400 space-y-1">
+                        {service.services.map(s => <li key={s}>{s}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-3">Tools</div>
+                      <div className="grid grid-cols-3 gap-2 opacity-60">
+                        {service.tools.map(t => (
+                          <div key={t} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-[10px] font-bold">
+                            {t.substring(0, 1)}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {service.id !== '01' && (
+                    <div className="mt-auto pt-10">
+                      <h3 className="text-xl font-bold">{service.title}</h3>
+                    </div>
+                  )}
                 </div>
-              </motion.div>
-            ))}
+              ))}
+            </motion.div>
           </div>
         </div>
       </section>
