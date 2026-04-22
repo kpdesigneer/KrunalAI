@@ -43,8 +43,11 @@ const vertexShader = `
     pos = mix(pos, targetPos4, p4);
     pos = mix(pos, targetPos5, p5);
     
-    // Rotate slowly on Y axis
-    float angle = uTime * 0.05;
+    // Rotate for Globe, Box, Triangle, and Bulb
+    // Fade out before Stars (3.2 -> 4.0)
+    float rotationFade = smoothstep(4.0, 3.2, uProgress);
+    
+    float angle = uTime * 0.05 * rotationFade;
     mat2 rot = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
     pos.xz = rot * pos.xz;
     
@@ -57,11 +60,12 @@ const vertexShader = `
     float dist = distance(pos.xy, uMouse.xy);
     float frontFace = smoothstep(-0.2, 0.3, pos.z);
     
+    // 1.4 radius, 0.7x repel
     float radius = 1.4;
     float push = smoothstep(radius, 0.0, dist);
     float bounce = push * (1.0 - push) * 0.08;
     float wakeBounds = max(0.0, 1.0 - (dist / 2.5)); 
-    float naturalRipple = sin(dist * 3.0 - uTime * 1.0 + (pos.x + pos.y) * 1.5) * 0.02 * wakeBounds;
+    float naturalRipple = sin(dist * 3.0 - uTime * 1.0 + (pos.x + pos.y) * 1.5) * 0.01 * wakeBounds;
     
     float rippleAge = uTime - uRippleTime;
     float rippleDist = distance(pos.xy, uRippleOrigin.xy);
@@ -69,25 +73,29 @@ const vertexShader = `
     float rippleWidth = 0.4;
     float rippleRing = smoothstep(rippleWidth, 0.0, abs(rippleDist - rippleRadius));
     float rippleFade = max(0.0, 1.0 - rippleAge * 0.8); 
-    float rippleForce = rippleRing * rippleFade * 0.15 * frontFace;
+    float rippleForce = rippleRing * rippleFade * 0.075 * frontFace;
     
     float dynamicForce = (push + bounce + naturalRipple); 
     vec3 dir = normalize(vec3(pos.x - uMouse.x, pos.y - uMouse.y, 0.0));
     float repelReduction = mix(1.0, 1.5, clamp(uProgress, 0.0, 1.0));
-    float glowReduction = mix(1.0, 0.5, clamp(uProgress, 0.0, 1.0));
+    float glowReduction = mix(1.0, 0.3, clamp(uProgress, 0.0, 1.0));
+    
+    float isNotSphere = clamp(uProgress, 0.0, 1.0);
+    float hollowFactor = mix(1.0, smoothstep(0.0, radius * 0.4, dist), isNotSphere);
     
     // Increased repel for non-sphere shapes
     pos += dir * dynamicForce * 0.2 * frontFace * repelReduction;
+    pos.z -= (1.0 - hollowFactor) * 0.4 * frontFace; // Hollow depth push
     
     float speedFactor = 1.0 + clamp(uProgress, 0.0, 2.0) * 1.5;
     pos.x += sin(uTime * 0.4 * speedFactor + size * 100.0) * 0.02;
     pos.y += cos(uTime * 0.35 * speedFactor + size * 120.0) * 0.02;
     pos.z += sin(uTime * 0.45 * speedFactor + size * 80.0) * 0.02;
-
+ 
     vec3 rippleDir = normalize(vec3(pos.x - uRippleOrigin.x, pos.y - uRippleOrigin.y, 0.0));
     pos += rippleDir * rippleForce * repelReduction;
     
-    vHighlight = push * glowReduction;
+    vHighlight = push * glowReduction * hollowFactor;
     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mvPosition;
     vRim = smoothstep(0.0, 2.5, length(mvPosition.xy));
@@ -165,7 +173,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
   const glowRef = useRef<THREE.Mesh>(null);
   const groupRef = useRef<THREE.Group>(null);
   const smoothProgress = scrollY;
-  const particleCount = 10000;
+  const particleCount = 30000;
 
   const { positions, posBox, posHelix, posBulb, posStars, posWand, sizes } = useMemo(() => {
     const pSphere = new Float32Array(particleCount * 3);
@@ -288,6 +296,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       const vC = Math.random();
       const rC = Math.sqrt(uC) * 1.6;
       const thetaC = vC * Math.PI * 2;
+      const depth = 0.9;
       
       let tx = Math.cos(thetaC) * rC;
       let ty = Math.sin(thetaC) * rC;
@@ -307,7 +316,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       
       px = tx;
       py = ty;
-      pz = (Math.random() - 0.5) * 0.1;
+      pz = (Math.random() - 0.5) * depth;
       
       pWand[i*3] = px * 1.2; pWand[i*3+1] = py * 1.2; pWand[i*3+2] = pz;
 
