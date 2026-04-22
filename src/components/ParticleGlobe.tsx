@@ -312,21 +312,6 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       // 0-20 (Globe-Box), 20-30 (Hold Box), 30-40 (Box-Tetra), 
       // 40-55 (Hold Tetra), 55-65 (Tetra-Stars), 65-90 (Hold Stars), 90+ (Exit)
       
-      let prog;
-      if (sVal < 0.2) {
-        prog = sVal / 0.2; 
-      } else if (sVal < 0.3) {
-        prog = 1.0; 
-      } else if (sVal < 0.4) {
-        prog = 1.0 + (sVal - 0.3) / 0.1; 
-      } else if (sVal < 0.55) {
-        prog = 2.0;
-      } else if (sVal < 0.65) {
-        prog = 2.0 + (sVal - 0.55) / 0.1;
-      } else {
-        prog = 3.0; 
-      }
-
       // Track horizontal target position:
       // 0-20: Center -> -2.5
       // 55-65: -2.5 -> +3.0
