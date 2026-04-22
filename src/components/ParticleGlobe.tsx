@@ -336,22 +336,18 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
         ty = 0; tz = 0;
       }
       else if (sVal < 0.25) { tx = -2.5; ty = 0.0; tz = 0.0; } 
-      else if (sVal < 0.27) { 
+      else if (sVal < 0.30) { 
         tx = -2.5; ty = 0.0; tz = 0.0; 
       }
-      else if (sVal < 0.47) { tx = -2.5; ty = 0.0; tz = 0.0; } 
-      else if (sVal < 0.49) { 
+      else if (sVal < 0.50) { tx = -2.5; ty = 0.0; tz = 0.0; } 
+      else if (sVal < 0.55) { 
         tx = -2.5; ty = 0.0; tz = 0.0; 
       }
-      else if (sVal < 0.65) { tx = -2.5; ty = 0.0; tz = 0.0; } 
-      else if (sVal < 0.67) { 
-        const t = (sVal - 0.65) / 0.02;
+      else if (sVal < 0.75) { tx = -2.5; ty = 0.0; tz = 0.0; } 
+      else if (sVal < 0.80) { 
+        const t = (sVal - 0.75) / 0.05;
         tx = -2.5 * (1 - t) + 3.0 * t; 
         ty = 0.0; tz = 0.0;
-      }
-      else if (sVal < 0.75) { tx = 3.0; ty = 0.0; tz = 0.0; }
-      else if (sVal < 0.80) { 
-        tx = 3.0; ty = 0.0; tz = 0.0;
       }
       else { tx = 3.0; ty = 0.0; tz = 0.0; }
       
@@ -384,13 +380,11 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       let prog;
       if (sVal < 0.05) prog = sVal / 0.05;
       else if (sVal < 0.25) prog = 1.0;
-      else if (sVal < 0.27) prog = 1.0 + (sVal - 0.25) / 0.02;
-      else if (sVal < 0.47) prog = 2.0;
-      else if (sVal < 0.49) prog = 2.0 + (sVal - 0.47) / 0.02;
-      else if (sVal < 0.65) prog = 3.0;
-      else if (sVal < 0.67) prog = 3.0 + (sVal - 0.65) / 0.02;
-      else if (sVal < 0.75) prog = 4.0;
-      else if (sVal < 0.80) prog = 4.0 + (sVal - 0.75) / 0.05;
+      else if (sVal < 0.30) prog = 1.0 + (sVal - 0.25) / 0.05;
+      else if (sVal < 0.50) prog = 2.0;
+      else if (sVal < 0.55) prog = 2.0 + (sVal - 0.50) / 0.05;
+      else if (sVal < 0.75) prog = 3.0;
+      else if (sVal < 0.80) prog = 3.0 + (sVal - 0.75) / 0.05; // Quick Stars -> Play
       else prog = 5.0;
       // Refined Elastic-Snap Spring Morph Logic
       const stiffness = 100.0;
