@@ -349,7 +349,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
         tx = -2.5 * (1 - t) + 3.0 * t; 
         ty = 0.0; tz = 0.0;
       }
-      else if (sVal < 0.78) { tx = 3.0; ty = 0.0; tz = 0.0; }
+      else if (sVal < 0.75) { tx = 3.0; ty = 0.0; tz = 0.0; }
       else if (sVal < 0.80) { 
         tx = 3.0; ty = 0.0; tz = 0.0;
       }
@@ -389,8 +389,8 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       else if (sVal < 0.49) prog = 2.0 + (sVal - 0.47) / 0.02;
       else if (sVal < 0.65) prog = 3.0;
       else if (sVal < 0.67) prog = 3.0 + (sVal - 0.65) / 0.02;
-      else if (sVal < 0.78) prog = 4.0;
-      else if (sVal < 0.80) prog = 4.0 + (sVal - 0.78) / 0.02;
+      else if (sVal < 0.75) prog = 4.0;
+      else if (sVal < 0.80) prog = 4.0 + (sVal - 0.75) / 0.05;
       else prog = 5.0;
       // Refined Elastic-Snap Spring Morph Logic
       const stiffness = 100.0;
