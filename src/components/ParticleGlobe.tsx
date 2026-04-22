@@ -357,21 +357,20 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       groupRef.current.position.set(tx, ty, tz);
       
       const currentP = shaderRef.current.uniforms.uProgress.value;
-      const p01 = Math.max(0, Math.min(1, currentP));
-      const rotationFade = 1.0 - p01;
-      
-      groupRef.current.rotation.y = (0.38) * rotationFade;
+      // Allow rotation to overshoot for the Globe snap
+      const rotationFade = 1.0 - currentP;
+      groupRef.current.rotation.y = (0.38) * Math.max(0, Math.min(1.2, rotationFade));
 
       if (glowRef.current) {
-        const p01 = Math.max(0, Math.min(1, shaderRef.current.uniforms.uProgress.value));
-        const glowScale = 1.05 * p01 + 1.5 * (1.0 - p01); // Simplified for glow follow
-        // Actually we want 1.05 at globe (p=0) and 1.5 at box (p=1)
-        const activeGlowScale = 1.05 * (1.0 - p01) + 1.5 * p01;
+        const p = shaderRef.current.uniforms.uProgress.value;
+        // Allow glow scale to overshoot for the snap
+        const activeGlowScale = 1.05 * (1.0 - p) + 1.5 * p;
         glowRef.current.scale.set(activeGlowScale, activeGlowScale, activeGlowScale);
         
         const glowMat = glowRef.current.material as THREE.ShaderMaterial;
         if (glowMat.uniforms.uGlowProgress) {
-          glowMat.uniforms.uGlowProgress.value = 1.0 - p01; 
+          // Allow glow intensity to overshoot for the snap
+          glowMat.uniforms.uGlowProgress.value = 1.0 - p; 
         }
       }
     }
