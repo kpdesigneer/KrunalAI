@@ -77,8 +77,8 @@ const vertexShader = `
     
     float dynamicForce = (push + bounce + naturalRipple); 
     vec3 dir = normalize(vec3(pos.x - uMouse.x, pos.y - uMouse.y, 0.0));
-    float repelReduction = mix(1.0, 1.5, clamp(uProgress, 0.0, 1.0));
-    float glowReduction = mix(1.0, 0.3, clamp(uProgress, 0.0, 1.0));
+    float repelReduction = mix(1.5, 1.0, clamp(uProgress, 0.0, 1.0));
+    float glowReduction = mix(0.6, 0.3, clamp(uProgress, 0.0, 1.0));
     
     float isNotSphere = clamp(uProgress, 0.0, 1.0);
     float hollowFactor = mix(1.0, smoothstep(0.0, radius * 0.4, dist), isNotSphere);
@@ -88,9 +88,10 @@ const vertexShader = `
     pos.z -= (1.0 - hollowFactor) * 0.4 * frontFace; // Hollow depth push
     
     float speedFactor = 1.0 + clamp(uProgress, 0.0, 2.0) * 1.5;
-    pos.x += sin(uTime * 0.4 * speedFactor + size * 100.0) * 0.02;
-    pos.y += cos(uTime * 0.35 * speedFactor + size * 120.0) * 0.02;
-    pos.z += sin(uTime * 0.45 * speedFactor + size * 80.0) * 0.02;
+    float jitterTime = uTime * 2.0;
+    pos.x += sin(jitterTime + size * 43758.5453) * 0.04;
+    pos.y += cos(jitterTime + size * 12345.6789) * 0.04;
+    pos.z += sin(jitterTime + size * 98765.4321) * 0.04;
  
     vec3 rippleDir = normalize(vec3(pos.x - uRippleOrigin.x, pos.y - uRippleOrigin.y, 0.0));
     pos += rippleDir * rippleForce * repelReduction;
@@ -101,7 +102,7 @@ const vertexShader = `
     vRim = smoothstep(0.0, 2.5, length(mvPosition.xy));
     vDepth = -mvPosition.z;
     vTwinkle = (sin(uTime * 1.5 + size * 100.0) * 0.5 + 0.5);
-    vColor = vec3(0.68, 0.68, 0.68);
+    vColor = mix(vec3(0.6), vec3(1.0), frontFace);
     
     float visibilitySeed = fract(size * 123.456);
     float f1 = clamp(uProgress, 0.0, 1.0);
@@ -116,12 +117,9 @@ const vertexShader = `
     baseVisibility = mix(baseVisibility, step(0.85, visibilitySeed), f4);
     float visibility = mix(baseVisibility, step(0.86, visibilitySeed), f5);
     
-    float sizeMultiplier = mix(1.0, 1.5, f2); 
-    sizeMultiplier = mix(sizeMultiplier, 1.2, f3); 
-    sizeMultiplier = mix(sizeMultiplier, 1.2, f4); // Stars
-    sizeMultiplier = mix(sizeMultiplier, 1.2, f5); // Play Button
+    float sizeMultiplier = 3.0; 
     
-    gl_PointSize = (size * 3.0576 + vTwinkle * 2.436) * (20.0 / vDepth) * (1.0 + vHighlight * 3.0) * visibility * sizeMultiplier;
+    gl_PointSize = (1.3 * 3.0576 + vTwinkle * 2.436) * (20.0 / vDepth) * (1.0 + vHighlight * 3.0) * visibility * sizeMultiplier;
   }
 `;
 
@@ -135,7 +133,7 @@ const fragmentShader = `
   void main() {
     float r = distance(gl_PointCoord, vec2(0.5));
     if (r > 0.5) discard;
-    float glow = max(0.0, (0.08 / r) - 0.16);
+    float glow = max(0.0, (0.04 / (r + 0.01)) - 0.1);
     float depthFade = clamp(1.0 - (vDepth - 5.0) / 10.0, 0.1, 1.0);
     vec3 targetOrbColor = vec3(0.65, 0.65, 1.0);
     vec3 finalColor = mix(vColor, targetOrbColor, vHighlight);
@@ -159,9 +157,7 @@ const glowFragmentShader = `
   varying vec3 vNormal;
   void main() {
     float edge = abs(dot(vNormal, vec3(0.0, 0.0, 1.0)));
-    float baseIntensity = pow(edge, 4.0); 
-    float softEdge = smoothstep(0.0, 0.4, edge); 
-    float intensity = baseIntensity * softEdge;
+    float intensity = pow(edge, 2.5); // Bright core, soft surface fade
     // Mix between bright sphere (0.30) and refined shapes (0.12)
     float op = mix(0.12, 0.30, uGlowProgress);
     gl_FragColor = vec4(0.4, 0.4, 1.0, intensity * op); 
@@ -173,7 +169,8 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
   const glowRef = useRef<THREE.Mesh>(null);
   const groupRef = useRef<THREE.Group>(null);
   const smoothProgress = scrollY;
-  const particleCount = 30000;
+  const particleCount = 10000;
+  const progressVel = useRef(0); 
 
   const { positions, posBox, posHelix, posBulb, posStars, posWand, sizes } = useMemo(() => {
     const pSphere = new Float32Array(particleCount * 3);
@@ -328,33 +325,38 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
   const entryDuration = 6.0; 
   const targetScale = 0.8;
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     const elapsed = state.clock.elapsedTime;
     if (groupRef.current) {
       const sVal = smoothProgress.get();
-      let tx, ty, tz = 0;
-      if (sVal < 0.09) { 
-        const t = sVal / 0.09;
-        tx = 0.0 * (1 - t) + (-2.5) * t; 
+      let tx = 0, ty = 0, tz = 0;
+      if (sVal < 0.05) { 
+        const t = sVal / 0.05;
+        tx = 0 * (1 - t) + -2.5 * t; 
+        ty = 0; tz = 0;
+      }
+      else if (sVal < 0.25) { tx = -2.5; ty = 0.0; tz = 0.0; } 
+      else if (sVal < 0.27) { 
+        const t = (sVal - 0.25) / 0.02;
+        tx = -2.5; ty = 0.0; tz = 0.0; 
+      }
+      else if (sVal < 0.47) { tx = -2.5; ty = 0.0; tz = 0.0; } 
+      else if (sVal < 0.49) { 
+        const t = (sVal - 0.47) / 0.02;
+        tx = -2.5; ty = 0.0; tz = 0.0; 
+      }
+      else if (sVal < 0.65) { tx = -2.5; ty = 0.0; tz = 0.0; } 
+      else if (sVal < 0.67) { 
+        const t = (sVal - 0.65) / 0.02;
+        tx = -2.5 * (1 - t) + 3.0 * t; 
         ty = 0.0; tz = 0.0;
       }
-      else if (sVal < 0.25) { tx = -2.5; ty = 0.0; tz = 0.0; } // Box Origin
-      else if (sVal < 0.30) { 
-        const t = (sVal - 0.25) / 0.05;
-        tx = -2.5; ty = 0.0; tz = 0.0; // Box -> Tetra
+      else if (sVal < 0.78) { tx = 3.0; ty = 0.0; tz = 0.0; }
+      else if (sVal < 0.80) { 
+        const t = (sVal - 0.78) / 0.02;
+        tx = 3.0; ty = 0.0; tz = 0.0;
       }
-      else if (sVal < 0.40) { tx = -2.5; ty = 0.0; tz = 0.0; } // Tetra Origin
-      else if (sVal < 0.45) { 
-        const t = (sVal - 0.40) / 0.05;
-        tx = -2.5; ty = 0.0; tz = 0.0; // Tetra -> Bulb
-      }
-      else if (sVal < 0.55) { tx = -2.5; ty = 0.0; tz = 0.0; } // Bulb Origin
-      else if (sVal < 0.60) { 
-        const t = (sVal - 0.55) / 0.05;
-        tx = -2.5 * (1 - t) + 3.0 * t; // Bulb -> Stars
-        ty = 0.0; tz = 0.0;
-      }
-      else { tx = 3.0; ty = 0.0; tz = 0.0; } // Stars & Play Button
+      else { tx = 3.0; ty = 0.0; tz = 0.0; }
       
       let finalScale = targetScale;
       if (elapsed < entryDuration) {
@@ -363,17 +365,15 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       }
       groupRef.current.scale.set(finalScale, finalScale, finalScale);
       groupRef.current.position.set(tx, ty, tz);
-      const baseRotation = (sVal < 0.09 ? (sVal / 0.09) : 1) * 0.38;
-      const rotationFade = sVal >= 0.09 ? 0.0 : 1.0;
+      const baseRotation = (sVal < 0.05 ? (sVal / 0.05) : 1) * 0.38;
+      const rotationFade = sVal >= 0.05 ? 0.0 : 1.0;
       groupRef.current.rotation.y = baseRotation * rotationFade;
 
       if (glowRef.current) {
-        // Scale glow to be inside: 1.2 (Globe) -> 1.8 (Box/Tetra/Bulb)
-        const t = Math.max(0, Math.min(1, sVal / 0.09));
-        const glowScale = 1.2 * (1 - t) + 1.8 * t;
+        const t = Math.max(0, Math.min(1, sVal / 0.05));
+        const glowScale = 1.05 * (1 - t) + 1.5 * t;
         glowRef.current.scale.set(glowScale, glowScale, glowScale);
         
-        // Boost glow only for sphere
         const glowMat = glowRef.current.material as THREE.ShaderMaterial;
         if (glowMat.uniforms.uGlowProgress) {
           glowMat.uniforms.uGlowProgress.value = 1.0 - t; 
@@ -385,17 +385,25 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       shaderRef.current.uniforms.uTime.value = elapsed;
       const sVal = smoothProgress.get();
       let prog;
-      if (sVal < 0.09) prog = sVal / 0.09;
+      if (sVal < 0.05) prog = sVal / 0.05;
       else if (sVal < 0.25) prog = 1.0;
-      else if (sVal < 0.3) prog = 1.0 + (sVal - 0.25) / 0.05;
-      else if (sVal < 0.4) prog = 2.0;
-      else if (sVal < 0.45) prog = 2.0 + (sVal - 0.4) / 0.05;
-      else if (sVal < 0.55) prog = 3.0;
-      else if (sVal < 0.6) prog = 3.0 + (sVal - 0.55) / 0.05;
-      else if (sVal < 0.7) prog = 4.0;
-      else if (sVal < 0.75) prog = 4.0 + (sVal - 0.7) / 0.05;
+      else if (sVal < 0.27) prog = 1.0 + (sVal - 0.25) / 0.02;
+      else if (sVal < 0.47) prog = 2.0;
+      else if (sVal < 0.49) prog = 2.0 + (sVal - 0.47) / 0.02;
+      else if (sVal < 0.65) prog = 3.0;
+      else if (sVal < 0.67) prog = 3.0 + (sVal - 0.65) / 0.02;
+      else if (sVal < 0.78) prog = 4.0;
+      else if (sVal < 0.80) prog = 4.0 + (sVal - 0.78) / 0.02;
       else prog = 5.0;
-      shaderRef.current.uniforms.uProgress.value = prog;
+      // Refined Elastic-Snap Spring Morph Logic
+      const stiffness = 100.0;
+      const damping = 7.0;
+      const dt = Math.min(delta, 0.1); 
+      
+      const currentP = shaderRef.current.uniforms.uProgress.value;
+      const force = (prog - currentP) * stiffness;
+      progressVel.current += (force - progressVel.current * damping) * dt;
+      shaderRef.current.uniforms.uProgress.value += progressVel.current * dt;
       
       const vector = new THREE.Vector3(state.mouse.x, state.mouse.y, 0.5);
       vector.unproject(state.camera);
