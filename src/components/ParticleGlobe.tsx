@@ -329,23 +329,20 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
     const elapsed = state.clock.elapsedTime;
     if (groupRef.current) {
       const sVal = smoothProgress.get();
+      // Position logic based on 18/2 thresholds
       let tx = 0, ty = 0, tz = 0;
-      if (sVal < 0.05) { 
-        const t = sVal / 0.05;
+      if (sVal < 0.02) { 
+        const t = sVal / 0.02;
         tx = 0 * (1 - t) + -2.5 * t; 
         ty = 0; tz = 0;
       }
-      else if (sVal < 0.25) { tx = -2.5; ty = 0.0; tz = 0.0; } 
-      else if (sVal < 0.30) { 
-        tx = -2.5; ty = 0.0; tz = 0.0; 
-      }
-      else if (sVal < 0.50) { tx = -2.5; ty = 0.0; tz = 0.0; } 
-      else if (sVal < 0.55) { 
-        tx = -2.5; ty = 0.0; tz = 0.0; 
-      }
-      else if (sVal < 0.75) { tx = -2.5; ty = 0.0; tz = 0.0; } 
-      else if (sVal < 0.80) { 
-        const t = (sVal - 0.75) / 0.05;
+      else if (sVal < 0.20) { tx = -2.5; ty = 0.0; tz = 0.0; } 
+      else if (sVal < 0.22) { tx = -2.5; ty = 0.0; tz = 0.0; } 
+      else if (sVal < 0.40) { tx = -2.5; ty = 0.0; tz = 0.0; } 
+      else if (sVal < 0.42) { tx = -2.5; ty = 0.0; tz = 0.0; } 
+      else if (sVal < 0.60) { tx = -2.5; ty = 0.0; tz = 0.0; } 
+      else if (sVal < 0.62) { 
+        const t = (sVal - 0.60) / 0.02;
         tx = -2.5 * (1 - t) + 3.0 * t; 
         ty = 0.0; tz = 0.0;
       }
@@ -358,12 +355,12 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       }
       groupRef.current.scale.set(finalScale, finalScale, finalScale);
       groupRef.current.position.set(tx, ty, tz);
-      const baseRotation = (sVal < 0.05 ? (sVal / 0.05) : 1) * 0.38;
-      const rotationFade = sVal >= 0.05 ? 0.0 : 1.0;
+      const baseRotation = (sVal < 0.02 ? (sVal / 0.02) : 1) * 0.38;
+      const rotationFade = sVal >= 0.02 ? 0.0 : 1.0;
       groupRef.current.rotation.y = baseRotation * rotationFade;
 
       if (glowRef.current) {
-        const t = Math.max(0, Math.min(1, sVal / 0.05));
+        const t = Math.max(0, Math.min(1, sVal / 0.02));
         const glowScale = 1.05 * (1 - t) + 1.5 * t;
         glowRef.current.scale.set(glowScale, glowScale, glowScale);
         
@@ -378,13 +375,15 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       shaderRef.current.uniforms.uTime.value = elapsed;
       const sVal = smoothProgress.get();
       let prog;
-      if (sVal < 0.05) prog = sVal / 0.05;
-      else if (sVal < 0.25) prog = 1.0;
-      else if (sVal < 0.30) prog = 1.0 + (sVal - 0.25) / 0.05;
-      else if (sVal < 0.50) prog = 2.0;
-      else if (sVal < 0.55) prog = 2.0 + (sVal - 0.50) / 0.05;
-      else if (sVal < 0.75) prog = 3.0;
-      else if (sVal < 0.80) prog = 3.0 + (sVal - 0.75) / 0.05; // Quick Stars -> Play
+      if (sVal < 0.02) prog = sVal / 0.02;
+      else if (sVal < 0.20) prog = 1.0;
+      else if (sVal < 0.22) prog = 1.0 + (sVal - 0.20) / 0.02;
+      else if (sVal < 0.40) prog = 2.0;
+      else if (sVal < 0.42) prog = 2.0 + (sVal - 0.40) / 0.02;
+      else if (sVal < 0.60) prog = 3.0;
+      else if (sVal < 0.62) prog = 3.0 + (sVal - 0.60) / 0.02;
+      else if (sVal < 0.80) prog = 4.0;
+      else if (sVal < 0.82) prog = 4.0 + (sVal - 0.80) / 0.02;
       else prog = 5.0;
       // Refined Elastic-Snap Spring Morph Logic
       const stiffness = 100.0;
