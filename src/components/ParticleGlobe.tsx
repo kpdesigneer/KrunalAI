@@ -57,7 +57,7 @@ const vertexShader = `
     float dist = distance(pos.xy, uMouse.xy);
     float frontFace = smoothstep(-0.2, 0.3, pos.z);
     
-    float radius = 1.2;
+    float radius = 1.4;
     float push = smoothstep(radius, 0.0, dist);
     float bounce = push * (1.0 - push) * 0.08;
     float wakeBounds = max(0.0, 1.0 - (dist / 2.5)); 
@@ -147,18 +147,22 @@ const glowVertexShader = `
 `;
 
 const glowFragmentShader = `
+  uniform float uGlowProgress;
   varying vec3 vNormal;
   void main() {
     float edge = abs(dot(vNormal, vec3(0.0, 0.0, 1.0)));
-    float baseIntensity = pow(edge, 2.5); 
+    float baseIntensity = pow(edge, 4.0); 
     float softEdge = smoothstep(0.0, 0.4, edge); 
     float intensity = baseIntensity * softEdge;
-    gl_FragColor = vec4(0.35, 0.35, 0.85, intensity * 0.3); 
+    // Mix between bright sphere (0.30) and refined shapes (0.12)
+    float op = mix(0.12, 0.30, uGlowProgress);
+    gl_FragColor = vec4(0.4, 0.4, 1.0, intensity * op); 
   }
 `;
 
 export function ParticleGlobe({ scrollY }: { scrollY: any }) {
   const shaderRef = useRef<THREE.ShaderMaterial>(null);
+  const glowRef = useRef<THREE.Mesh>(null);
   const groupRef = useRef<THREE.Group>(null);
   const smoothProgress = scrollY;
   const particleCount = 10000;
@@ -232,12 +236,12 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
         const ph = Math.acos(2.0 * vv - 1.0);
         const rr = 1.15 + (Math.random() - 0.5) * 0.05;
         let x_ = Math.sin(ph) * Math.cos(ang) * rr;
-        let y_ = Math.sin(ph) * Math.sin(ang) * rr + 0.4; // Maintain lower center for bulge
+        let y_ = Math.sin(ph) * Math.sin(ang) * rr; // Centered
         let z_ = Math.cos(ph) * rr;
         
-        // Smoother join between top and neck (Taper starts at 0.8 instead of 0.5)
-        if (y_ < 0.8) {
-          const taper = Math.max(0, Math.min(1, (y_ + 0.85) / 1.65));
+        // Smoother, deeper join between top sphere and base neck
+        if (y_ < 0.2) {
+          const taper = Math.max(0, Math.min(1, (y_ + 1.2) / 1.65));
           x_ *= (0.35 + 0.65 * taper);
           z_ *= (0.35 + 0.65 * taper);
         }
@@ -248,8 +252,8 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
         const r = 0.45 + (Math.random() - 0.5) * 0.02;
         const segment = Math.random();
         let h;
-        if (segment < 0.5) h = -0.85 - Math.random() * 0.15; // Band 1
-        else h = -1.1 - Math.random() * 0.15; // Band 2
+        if (segment < 0.5) h = -1.25 - Math.random() * 0.15; // Band 1 (Lowered to match center)
+        else h = -1.5 - Math.random() * 0.15; // Band 2
         blbX = Math.cos(ang) * r;
         blbY = h;
         blbZ = Math.sin(ang) * r;
@@ -260,7 +264,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
         const ph = Math.acos(2.0 * vv - 1.0);
         const rr = 0.25 * Math.random();
         blbX = Math.sin(ph) * Math.cos(ang) * rr;
-        blbY = -1.35 - Math.abs(Math.cos(ph)) * 0.2;
+        blbY = -1.75 - Math.abs(Math.cos(ph)) * 0.2;
         blbZ = Math.sin(ph) * Math.sin(ang) * rr;
       }
       pBulb[i*3] = blbX * 1.6; pBulb[i*3+1] = blbY * 1.6; pBulb[i*3+2] = blbZ * 1.6;
@@ -273,10 +277,10 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       const sX = Math.pow(Math.abs(Math.cos(tS)), pS) * Math.sign(Math.cos(tS)) * rS;
       const sY = Math.pow(Math.abs(Math.sin(tS)), pS) * Math.sign(Math.sin(tS)) * rS;
       let sx, sy, sz = (Math.random() - 0.5) * 0.3;
-      if (sGrp < 6) { sx = sX * 1.6 - 1.0; sy = sY * 1.6; }
+      if (sGrp < 6) { sx = sX * 1.6; sy = sY * 1.6; } // Removed -1.0 offset
       else if (sGrp < 8) { sx = sX * 0.7 + 1.2; sy = sY * 0.7 + 1.0; }
       else { sx = sX * 0.55 + 1.4; sy = sY * 0.55 - 0.8; }
-      pStars[i*3] = sx; pStars[i*3+1] = sy; pStars[i*3+2] = sz;
+      pStars[i*3] = sx - 0.5; pStars[i*3+1] = sy - 0.2; pStars[i*3+2] = sz; // Global centering
 
       // 6. CIRCULAR PLAY BUTTON (Hollow Triangle Cutout)
       let px, py, pz;
@@ -319,11 +323,29 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
     const elapsed = state.clock.elapsedTime;
     if (groupRef.current) {
       const sVal = smoothProgress.get();
-      let targetX;
-      if (sVal < 0.09) { targetX = -2.5 * (sVal / 0.09); }
-      else if (sVal < 0.55) { targetX = -2.5; }
-      else if (sVal < 0.6) { targetX = -2.5 + (sVal - 0.55) / 0.05 * 5.5; }
-      else { targetX = 3.0; }
+      let tx, ty, tz = 0;
+      if (sVal < 0.09) { 
+        const t = sVal / 0.09;
+        tx = 0.0 * (1 - t) + (-2.5) * t; 
+        ty = 0.0; tz = 0.0;
+      }
+      else if (sVal < 0.25) { tx = -2.5; ty = 0.0; tz = 0.0; } // Box Origin
+      else if (sVal < 0.30) { 
+        const t = (sVal - 0.25) / 0.05;
+        tx = -2.5; ty = 0.0; tz = 0.0; // Box -> Tetra
+      }
+      else if (sVal < 0.40) { tx = -2.5; ty = 0.0; tz = 0.0; } // Tetra Origin
+      else if (sVal < 0.45) { 
+        const t = (sVal - 0.40) / 0.05;
+        tx = -2.5; ty = 0.0; tz = 0.0; // Tetra -> Bulb
+      }
+      else if (sVal < 0.55) { tx = -2.5; ty = 0.0; tz = 0.0; } // Bulb Origin
+      else if (sVal < 0.60) { 
+        const t = (sVal - 0.55) / 0.05;
+        tx = -2.5 * (1 - t) + 3.0 * t; // Bulb -> Stars
+        ty = 0.0; tz = 0.0;
+      }
+      else { tx = 3.0; ty = 0.0; tz = 0.0; } // Stars & Play Button
       
       let finalScale = targetScale;
       if (elapsed < entryDuration) {
@@ -331,11 +353,23 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
         finalScale *= (1.0 + (0.7 * Math.exp(-1.8 * t) * Math.cos(4.0 * t)));
       }
       groupRef.current.scale.set(finalScale, finalScale, finalScale);
-      groupRef.current.position.x = targetX;
-      groupRef.current.position.y = 0;
+      groupRef.current.position.set(tx, ty, tz);
       const baseRotation = (sVal < 0.09 ? (sVal / 0.09) : 1) * 0.38;
       const rotationFade = sVal >= 0.09 ? 0.0 : 1.0;
       groupRef.current.rotation.y = baseRotation * rotationFade;
+
+      if (glowRef.current) {
+        // Scale glow to be inside: 1.2 (Globe) -> 1.8 (Box/Tetra/Bulb)
+        const t = Math.max(0, Math.min(1, sVal / 0.09));
+        const glowScale = 1.2 * (1 - t) + 1.8 * t;
+        glowRef.current.scale.set(glowScale, glowScale, glowScale);
+        
+        // Boost glow only for sphere
+        const glowMat = glowRef.current.material as THREE.ShaderMaterial;
+        if (glowMat.uniforms.uGlowProgress) {
+          glowMat.uniforms.uGlowProgress.value = 1.0 - t; 
+        }
+      }
     }
 
     if (shaderRef.current) {
@@ -398,11 +432,14 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
           blending={THREE.NormalBlending}
         />
       </points>
-      <mesh>
+      <mesh ref={glowRef}>
         <sphereGeometry args={[2.4, 32, 32]} />
         <shaderMaterial
           vertexShader={glowVertexShader}
           fragmentShader={glowFragmentShader}
+          uniforms={{
+            uGlowProgress: { value: 1.0 }
+          }}
           transparent={true}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
