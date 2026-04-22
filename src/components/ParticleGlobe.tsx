@@ -12,7 +12,9 @@ const vertexShader = `
   attribute float size;
   attribute vec3 targetPos1; // Box
   attribute vec3 targetPos2; // Tetra
-  attribute vec3 targetPos3; // Stars
+  attribute vec3 targetPos3; // Bulb
+  attribute vec3 targetPos4; // Stars
+  attribute vec3 targetPos5; // Play Button
   
   varying vec3 vColor;
   varying float vDepth;
@@ -24,16 +26,22 @@ const vertexShader = `
     float p1 = clamp(uProgress, 0.0, 1.0);
     float p2 = clamp(uProgress - 1.0, 0.0, 1.0);
     float p3 = clamp(uProgress - 2.0, 0.0, 1.0);
+    float p4 = clamp(uProgress - 3.0, 0.0, 1.0);
+    float p5 = clamp(uProgress - 4.0, 0.0, 1.0);
     
     // Smooth easing
     p1 = smoothstep(0.0, 1.0, p1);
     p2 = smoothstep(0.0, 1.0, p2);
     p3 = smoothstep(0.0, 1.0, p3);
+    p4 = smoothstep(0.0, 1.0, p4);
+    p5 = smoothstep(0.0, 1.0, p5);
 
     vec3 pos = position; // Sphere
     pos = mix(pos, targetPos1, p1);
     pos = mix(pos, targetPos2, p2);
     pos = mix(pos, targetPos3, p3);
+    pos = mix(pos, targetPos4, p4);
+    pos = mix(pos, targetPos5, p5);
     
     // Rotate slowly on Y axis
     float angle = uTime * 0.05;
@@ -47,88 +55,63 @@ const vertexShader = `
     
     // 2D distance so the entire visible front repels uniformly
     float dist = distance(pos.xy, uMouse.xy);
-    // Only repel front-facing particles (z > 0) — back particles stay untouched, no cylinder
     float frontFace = smoothstep(-0.2, 0.3, pos.z);
     
-    // 2D depth tracking strictly stripped of all native parallax mathematical drop-off metrics
-    // Buttery smooth structural pointer mapping! 
-    // Wider interaction radius — more particles around the cursor are affected
     float radius = 1.2;
     float push = smoothstep(radius, 0.0, dist);
-    
-    // Smooth, visible bounce
     float bounce = push * (1.0 - push) * 0.08;
-    
-    // Subtle organic wake
     float wakeBounds = max(0.0, 1.0 - (dist / 2.5)); 
     float naturalRipple = sin(dist * 3.0 - uTime * 1.0 + (pos.x + pos.y) * 1.5) * 0.02 * wakeBounds;
     
-    // Expanding ripple ring effect when cursor leaves an area
     float rippleAge = uTime - uRippleTime;
     float rippleDist = distance(pos.xy, uRippleOrigin.xy);
-    float rippleRadius = rippleAge * 1.5; // ring expands outward
+    float rippleRadius = rippleAge * 1.5; 
     float rippleWidth = 0.4;
     float rippleRing = smoothstep(rippleWidth, 0.0, abs(rippleDist - rippleRadius));
-    float rippleFade = max(0.0, 1.0 - rippleAge * 0.8); // fades out over ~1.2 seconds
+    float rippleFade = max(0.0, 1.0 - rippleAge * 0.8); 
     float rippleForce = rippleRing * rippleFade * 0.15 * frontFace;
     
-    // Combined force — hollow reduced by 50%
     float dynamicForce = (push + bounce + naturalRipple); 
-    
-    // Soft horizontal displacement direction
     vec3 dir = normalize(vec3(pos.x - uMouse.x, pos.y - uMouse.y, 0.0));
+    float repelReduction = mix(1.0, 1.5, clamp(uProgress, 0.0, 1.0));
+    float glowReduction = mix(1.0, 0.5, clamp(uProgress, 0.0, 1.0));
     
-    // Reduced hollow force + ripple outward push
-    pos += dir * dynamicForce * 0.2 * frontFace;
+    // Increased repel for non-sphere shapes
+    pos += dir * dynamicForce * 0.2 * frontFace * repelReduction;
     
-    // Calculate dynamic speed based on shape progress (faster in Box and Chevron)
     float speedFactor = 1.0 + clamp(uProgress, 0.0, 2.0) * 1.5;
-
-    // Add organic random movement (drifting) - tightened to keep particles close to surface
     pos.x += sin(uTime * 0.4 * speedFactor + size * 100.0) * 0.05;
     pos.y += cos(uTime * 0.35 * speedFactor + size * 120.0) * 0.05;
     pos.z += sin(uTime * 0.45 * speedFactor + size * 80.0) * 0.05;
 
-    // Add ripple displacement (pushes outward from ripple origin)
     vec3 rippleDir = normalize(vec3(pos.x - uRippleOrigin.x, pos.y - uRippleOrigin.y, 0.0));
-    pos += rippleDir * rippleForce;
+    pos += rippleDir * rippleForce * repelReduction;
     
-    // Assign highlight factor so fragment shader can specifically glow affected particles
-    vHighlight = push;
-
+    vHighlight = push * glowReduction;
     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mvPosition;
-    
-    // Calculate a camera-facing Rim density constraint using model-view X/Y dispersion offsets
     vRim = smoothstep(0.0, 2.5, length(mvPosition.xy));
-    
-    // Retain z-depth variable to fade items in the fragment shader based on distance
     vDepth = -mvPosition.z;
-    
-    // Math to create a shimmering twinkle variation over time unique for sizes
     vTwinkle = (sin(uTime * 1.5 + size * 100.0) * 0.5 + 0.5);
-
-    // Muted grey tones
     vColor = vec3(0.68, 0.68, 0.68);
     
-    // Dynamically manage particle density across states:
-    // TOTAL PARTICLES = 10,000
-    // Globe: 27.5% (2750), Box: 50% (5000), Tetra: 22% (2200), Stars: 60% (6000)
     float visibilitySeed = fract(size * 123.456);
-    float globeFade = smoothstep(0.0, 1.0, uProgress);
-    float tetraFade = smoothstep(1.0, 2.0, uProgress);
-    float starsFade = smoothstep(2.0, 3.0, uProgress);
+    float f1 = clamp(uProgress, 0.0, 1.0);
+    float f2 = clamp(uProgress - 1.0, 0.0, 1.0);
+    float f3 = clamp(uProgress - 2.0, 0.0, 1.0);
+    float f4 = clamp(uProgress - 3.0, 0.0, 1.0);
+    float f5 = clamp(uProgress - 4.0, 0.0, 1.0);
     
-    // Mix to Globe density (27.5% = step(0.725))
-    float baseVisibility = mix(step(0.725, visibilitySeed), step(0.5, visibilitySeed), globeFade);
-    // Mix to Tetra density (22% = step(0.78))
-    baseVisibility = mix(baseVisibility, step(0.78, visibilitySeed), tetraFade);
-    // Mix to Stars density (30% = step(0.7))
-    float visibility = mix(baseVisibility, step(0.7, visibilitySeed), starsFade);
+    float baseVisibility = mix(step(0.725, visibilitySeed), step(0.75, visibilitySeed), f1);
+    baseVisibility = mix(baseVisibility, step(0.89, visibilitySeed), f2);
+    baseVisibility = mix(baseVisibility, step(0.8, visibilitySeed), f3);
+    baseVisibility = mix(baseVisibility, step(0.85, visibilitySeed), f4);
+    float visibility = mix(baseVisibility, step(0.86, visibilitySeed), f5);
     
-    // Size multiplier: 1.0 (Globe/Box) -> 1.5 (Tetra) -> 1.2 (Stars)
-    float sizeMultiplier = mix(1.0, 1.5, tetraFade);
-    sizeMultiplier = mix(sizeMultiplier, 1.2, starsFade);
+    float sizeMultiplier = mix(1.0, 1.5, f2); 
+    sizeMultiplier = mix(sizeMultiplier, 1.2, f3); 
+    sizeMultiplier = mix(sizeMultiplier, 1.2, f4); // Stars
+    sizeMultiplier = mix(sizeMultiplier, 1.2, f5); // Play Button
     
     gl_PointSize = (size * 3.0576 + vTwinkle * 2.436) * (20.0 / vDepth) * (1.0 + vHighlight * 3.0) * visibility * sizeMultiplier;
   }
@@ -144,28 +127,13 @@ const fragmentShader = `
   void main() {
     float r = distance(gl_PointCoord, vec2(0.5));
     if (r > 0.5) discard;
-    
-    // Beautiful, soft inverse-distance glowing falloff natively mapping true atmospheric glowing halos onto all dots equally!
-    // Creates a naturally dense bright core radiating softly outward gracefully into the perimeter flawlessly!
     float glow = max(0.0, (0.08 / r) - 0.16);
-    
-    // Parallax depth fade (distant particles get fainter to create true 3D atmosphere)
     float depthFade = clamp(1.0 - (vDepth - 5.0) / 10.0, 0.1, 1.0);
-    
-    // Shift color directly from solid White to a soft translucent Periwinkle/Purple!
-    // This completely removes the sharp core, turning the whole dot into a pastel bubble.
     vec3 targetOrbColor = vec3(0.65, 0.65, 1.0);
     vec3 finalColor = mix(vColor, targetOrbColor, vHighlight);
-    
-    // Opacity calculation. Base alpha limits forcefully raised to ensure color saturation blocks background leaks!
     float baseAlpha = depthFade * (0.7 + vTwinkle * 0.3);
-    
-    // Native Camera-Facing Fresnel: Center faces limits pulled up to 50% opacity floor to keep center particles observably thickly white!
     float rimFade = mix(0.5, 1.0, vRim); 
-    
-    // Final active opacity algorithm algebraically reduced downwards by precisely another 20% globally!
     float finalAlpha = mix(baseAlpha * rimFade, 0.75, vHighlight) * glow * 1.28; 
-    
     gl_FragColor = vec4(finalColor, finalAlpha);
   }
 `;
@@ -181,16 +149,10 @@ const glowVertexShader = `
 const glowFragmentShader = `
   varying vec3 vNormal;
   void main() {
-    // Smoother atmospheric falloff using a higher power for better central concentration
     float edge = abs(dot(vNormal, vec3(0.0, 0.0, 1.0)));
-    
-    // Create a very soft, multi-layered falloff to eliminate sharp geometric boundaries
     float baseIntensity = pow(edge, 2.5); 
-    float softEdge = smoothstep(0.0, 0.4, edge); // Forces a soft fade-to-zero at the very perimeter
-    
+    float softEdge = smoothstep(0.0, 0.4, edge); 
     float intensity = baseIntensity * softEdge;
-    
-    // Light, pastel purple atmospheric glow with a more translucent, blurred feel
     gl_FragColor = vec4(0.35, 0.35, 0.85, intensity * 0.3); 
   }
 `;
@@ -198,36 +160,36 @@ const glowFragmentShader = `
 export function ParticleGlobe({ scrollY }: { scrollY: any }) {
   const shaderRef = useRef<THREE.ShaderMaterial>(null);
   const groupRef = useRef<THREE.Group>(null);
-  
-  // Track scrolling to morph shapes
   const smoothProgress = scrollY;
+  const particleCount = 10000;
 
-  const particleCount = 10000; // Increased to 10,000 to allow doubling the star density
-
-  // Generate multi-shape geometry
-  const { positions, posBox, posHelix, posStars, sizes } = useMemo(() => {
+  const { positions, posBox, posHelix, posBulb, posStars, posWand, sizes } = useMemo(() => {
     const pSphere = new Float32Array(particleCount * 3);
     const pBox = new Float32Array(particleCount * 3);
     const pHelix = new Float32Array(particleCount * 3);
     const pStars = new Float32Array(particleCount * 3);
+    const pBulb = new Float32Array(particleCount * 3);
+    const pWand = new Float32Array(particleCount * 3);
     const pointSizes = new Float32Array(particleCount);
     
     const radius = 2.5;
-
-    // Tetrahedral Geometry Constants
     const sideSize = 1.8;
-    const vertices = [
-      [1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]
-    ].map(v => v.map(c => c * sideSize * 0.8));
-    const edges = [
-      [0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]
-    ];
+    const angleZ = 10 * (Math.PI / 180);
+    const cosZ = Math.cos(angleZ);
+    const sinZ = Math.sin(angleZ);
+    
+    const vertices = [[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]].map(v => {
+      const scaled = v.map(c => c * sideSize * 0.8);
+      const rx = scaled[0] * cosZ - scaled[1] * sinZ;
+      const ry = scaled[0] * sinZ + scaled[1] * cosZ;
+      return [rx, ry, scaled[2]];
+    });
+    const edges = [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]];
 
     for(let i = 0; i < particleCount; i++) {
+      // 1. SPHERE
       const u = Math.random();
       const v = Math.random();
-      
-      // 1. SPHERE
       const theta = u * 2.0 * Math.PI;
       const phi = Math.acos(2.0 * v - 1.0);
       const rNoise = radius * (0.9995 + Math.random() * 0.001);
@@ -235,115 +197,142 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       pSphere[i*3+1] = Math.sin(phi) * Math.sin(theta) * rNoise;
       pSphere[i*3+2] = Math.cos(phi) * rNoise;
       
-      // 2. WIREFRAME BOX
+      // 2. BOX
       const edgeIdxBox = Math.floor(Math.random() * 12);
-      const boxSize = 1.44;
-      const tEdge = (Math.random() - 0.5) * 2 * boxSize;
+      const bSize = 1.44;
+      const tE = (Math.random() - 0.5) * 2 * bSize;
       let bx, by, bz;
       if (edgeIdxBox < 4) {
-        bx = tEdge;
-        by = (edgeIdxBox & 1) ? boxSize : -boxSize;
-        bz = (edgeIdxBox & 2) ? boxSize : -boxSize;
+        bx = tE; by = (edgeIdxBox & 1) ? bSize : -bSize; bz = (edgeIdxBox & 2) ? bSize : -bSize;
       } else if (edgeIdxBox < 8) {
-        bx = (edgeIdxBox & 1) ? boxSize : -boxSize;
-        by = tEdge;
-        bz = (edgeIdxBox & 2) ? boxSize : -boxSize;
+        bx = (edgeIdxBox & 1) ? bSize : -bSize; by = tE; bz = (edgeIdxBox & 2) ? bSize : -bSize;
       } else {
-        bx = (edgeIdxBox & 1) ? boxSize : -boxSize;
-        by = (edgeIdxBox & 2) ? boxSize : -boxSize;
-        bz = tEdge;
+        bx = (edgeIdxBox & 1) ? bSize : -bSize; by = (edgeIdxBox & 2) ? bSize : -bSize; bz = tE;
       }
-      const edgeNoise = 0.45;
-      pBox[i*3]   = bx + (Math.random() - 0.5) * edgeNoise;
-      pBox[i*3+1] = by + (Math.random() - 0.5) * edgeNoise;
-      pBox[i*3+2] = bz + (Math.random() - 0.5) * edgeNoise;
+      pBox[i*3]   = bx + (Math.random() - 0.5) * 0.45;
+      pBox[i*3+1] = by + (Math.random() - 0.5) * 0.45;
+      pBox[i*3+2] = bz + (Math.random() - 0.5) * 0.45;
 
-      // 3. TETRAHEDRON
-      const edgeIdxTetra = i % 6;
-      const vA = vertices[edges[edgeIdxTetra][0]];
-      const vB = vertices[edges[edgeIdxTetra][1]];
-      const tLerp = Math.random();
-      let tx = vA[0] + (vB[0] - vA[0]) * tLerp;
-      let ty = vA[1] + (vB[1] - vA[1]) * tLerp;
-      let tz = vA[2] + (vB[2] - vA[2]) * tLerp;
-      const tetraThickness = 0.45;
-      tx += (Math.random() - 0.5) * tetraThickness;
-      ty += (Math.random() - 0.5) * tetraThickness;
-      tz += (Math.random() - 0.5) * tetraThickness;
-      pHelix[i*3] = tx;
-      pHelix[i*3+1] = ty;
-      pHelix[i*3+2] = tz;
+      // 3. TETRA
+      const eIdxT = i % 6;
+      const vA = vertices[edges[eIdxT][0]];
+      const vB = vertices[edges[eIdxT][1]];
+      const tL = Math.random();
+      pHelix[i*3]   = (vA[0] + (vB[0] - vA[0]) * tL) + (Math.random() - 0.5) * 0.45;
+      pHelix[i*3+1] = (vA[1] + (vB[1] - vA[1]) * tL) + (Math.random() - 0.5) * 0.45;
+      pHelix[i*3+2] = (vA[2] + (vB[2] - vA[2]) * tL) + (Math.random() - 0.5) * 0.45;
 
-      // 4. SPARKLE STARS
-      const starGroup = i % 10;
+      // 4. BULB (Reference-Matched)
+      const bType = Math.random();
+      let blbX, blbY, blbZ;
+      if (bType < 0.75) {
+        // Glass Part (Spherical top + tapering neck)
+        const ang = Math.random() * Math.PI * 2;
+        const vv = Math.random();
+        const ph = Math.acos(2.0 * vv - 1.0);
+        const rr = 1.15 + (Math.random() - 0.5) * 0.05;
+        let x_ = Math.sin(ph) * Math.cos(ang) * rr;
+        let y_ = Math.sin(ph) * Math.sin(ang) * rr + 0.4; // Maintain lower center for bulge
+        let z_ = Math.cos(ph) * rr;
+        
+        // Smoother join between top and neck (Taper starts at 0.8 instead of 0.5)
+        if (y_ < 0.8) {
+          const taper = Math.max(0, Math.min(1, (y_ + 0.85) / 1.65));
+          x_ *= (0.35 + 0.65 * taper);
+          z_ *= (0.35 + 0.65 * taper);
+        }
+        blbX = x_; blbY = y_; blbZ = z_;
+      } else if (bType < 0.95) {
+        // Base Bands (Two horizontal segments)
+        const ang = Math.random() * Math.PI * 2;
+        const r = 0.45 + (Math.random() - 0.5) * 0.02;
+        const segment = Math.random();
+        let h;
+        if (segment < 0.5) h = -0.85 - Math.random() * 0.15; // Band 1
+        else h = -1.1 - Math.random() * 0.15; // Band 2
+        blbX = Math.cos(ang) * r;
+        blbY = h;
+        blbZ = Math.sin(ang) * r;
+      } else {
+        // Bottom Contact (Rounded Tip)
+        const ang = Math.random() * Math.PI * 2;
+        const vv = Math.random();
+        const ph = Math.acos(2.0 * vv - 1.0);
+        const rr = 0.25 * Math.random();
+        blbX = Math.sin(ph) * Math.cos(ang) * rr;
+        blbY = -1.35 - Math.abs(Math.cos(ph)) * 0.2;
+        blbZ = Math.sin(ph) * Math.sin(ang) * rr;
+      }
+      pBulb[i*3] = blbX * 1.6; pBulb[i*3+1] = blbY * 1.6; pBulb[i*3+2] = blbZ * 1.6;
+
+      // 5. STARS
+      const sGrp = i % 10;
+      const tS = Math.random() * Math.PI * 2;
+      const rS = 0.5 + Math.pow(Math.random(), 0.5) * 0.5; 
+      const pS = 2.5;
+      const sX = Math.pow(Math.abs(Math.cos(tS)), pS) * Math.sign(Math.cos(tS)) * rS;
+      const sY = Math.pow(Math.abs(Math.sin(tS)), pS) * Math.sign(Math.sin(tS)) * rS;
       let sx, sy, sz = (Math.random() - 0.5) * 0.8;
-      const tStar = Math.random() * Math.PI * 2;
-      const rStar = 0.5 + Math.pow(Math.random(), 0.5) * 0.5; 
-      const pStar = 2.5;
-      const starX = Math.pow(Math.abs(Math.cos(tStar)), pStar) * Math.sign(Math.cos(tStar)) * rStar;
-      const starY = Math.pow(Math.abs(Math.sin(tStar)), pStar) * Math.sign(Math.sin(tStar)) * rStar;
-      if (starGroup < 6) {
-        sx = starX * 1.6 - 1.0; sy = starY * 1.6;
-      } else if (starGroup < 8) {
-        sx = starX * 0.7 + 1.2; sy = starY * 0.7 + 1.0;
-      } else {
-        sx = starX * 0.55 + 1.4; sy = starY * 0.55 - 0.8;
+      if (sGrp < 6) { sx = sX * 1.6 - 1.0; sy = sY * 1.6; }
+      else if (sGrp < 8) { sx = sX * 0.7 + 1.2; sy = sY * 0.7 + 1.0; }
+      else { sx = sX * 0.55 + 1.4; sy = sY * 0.55 - 0.8; }
+      pStars[i*3] = sx; pStars[i*3+1] = sy; pStars[i*3+2] = sz;
+
+      // 6. CIRCULAR PLAY BUTTON (Hollow Triangle Cutout)
+      let px, py, pz;
+      const uC = Math.random();
+      const vC = Math.random();
+      const rC = Math.sqrt(uC) * 1.6;
+      const thetaC = vC * Math.PI * 2;
+      
+      let tx = Math.cos(thetaC) * rC;
+      let ty = Math.sin(thetaC) * rC;
+      
+      // Rejection sampling to create the hollow triangle
+      // Triangle: A(0.8, 0), B(-0.4, 0.6), C(-0.4, -0.6)
+      let attempts = 0;
+      while (tx >= -0.4 && tx <= 0.8 && Math.abs(ty) <= 0.5 * (0.8 - tx) && attempts < 10) {
+        const uNew = Math.random();
+        const vNew = Math.random();
+        const rNew = Math.sqrt(uNew) * 1.6;
+        const thetaNew = vNew * Math.PI * 2;
+        tx = Math.cos(thetaNew) * rNew;
+        ty = Math.sin(thetaNew) * rNew;
+        attempts++;
       }
-      pStars[i*3] = sx;
-      pStars[i*3+1] = sy;
-      pStars[i*3+2] = sz;
+      
+      px = tx;
+      py = ty;
+      pz = (Math.random() - 0.5) * 0.2;
+      
+      pWand[i*3] = px * 1.2; pWand[i*3+1] = py * 1.2; pWand[i*3+2] = pz;
 
       pointSizes[i] = Math.random() * 1.5 + 0.5;
     }
-    return { positions: pSphere, posBox: pBox, posHelix: pHelix, posStars: pStars, sizes: pointSizes };
+    return { positions: pSphere, posBox: pBox, posHelix: pHelix, posBulb: pBulb, posStars: pStars, posWand: pWand, sizes: pointSizes };
   }, []);
 
-  // Modern organic zoom-out entry using elastic damping
   const entryDuration = 6.0; 
   const targetScale = 0.8;
 
   useFrame((state) => {
     const elapsed = state.clock.elapsedTime;
-    
     if (groupRef.current) {
       const sVal = smoothProgress.get();
-      
-      // RECALIBRATED TIMELINE (V4):
-      // 0-20 (Globe-Box), 20-30 (Hold Box), 30-40 (Box-Tetra), 
-      // 40-55 (Hold Tetra), 55-65 (Tetra-Stars), 65-90 (Hold Stars), 90+ (Exit)
-      
-      // Track horizontal target position:
-      // 0-20: Center -> -2.5
-      // 55-65: -2.5 -> +3.0
       let targetX;
-      if (sVal < 0.2) {
-        targetX = -2.5 * (sVal / 0.2);
-      } else if (sVal < 0.55) {
-        targetX = -2.5;
-      } else if (sVal < 0.65) {
-        targetX = -2.5 + (sVal - 0.55) / 0.1 * 5.5; 
-      } else {
-        targetX = 3.0;
-      }
+      if (sVal < 0.09) { targetX = -2.5 * (sVal / 0.09); }
+      else if (sVal < 0.55) { targetX = -2.5; }
+      else if (sVal < 0.6) { targetX = -2.5 + (sVal - 0.55) / 0.05 * 5.5; }
+      else { targetX = 3.0; }
       
-      // Entry zoom effect
       let finalScale = targetScale;
       if (elapsed < entryDuration) {
         const t = elapsed;
-        const decay = Math.exp(-1.8 * t);
-        const oscillation = Math.cos(4.0 * t);
-        const scaleMultiplier = 1.0 + (0.7 * decay * oscillation);
-        finalScale *= scaleMultiplier;
+        finalScale *= (1.0 + (0.7 * Math.exp(-1.8 * t) * Math.cos(4.0 * t)));
       }
-      
       groupRef.current.scale.set(finalScale, finalScale, finalScale);
       groupRef.current.position.x = targetX;
-      
-      // Footer Exit: Disabled as per request to hold until 100%
-      const exitY = 0;
-      groupRef.current.position.y = exitY;
-      
-      // Rotation logic: Fade out completely as we move to Tetra (sVal > 0.3)
+      groupRef.current.position.y = 0;
       const baseRotation = (sVal < 0.15 ? (sVal / 0.15) : 1) * 0.38;
       const rotationFade = sVal >= 0.4 ? 0.0 : (1.0 - Math.min(1.0, Math.max(0.0, (sVal - 0.3) / 0.1)));
       groupRef.current.rotation.y = baseRotation * rotationFade;
@@ -353,41 +342,30 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       shaderRef.current.uniforms.uTime.value = elapsed;
       const sVal = smoothProgress.get();
       let prog;
-      if (sVal < 0.3) {
-        prog = sVal / 0.3; 
-      } else if (sVal < 0.4) {
-        prog = 1.0; 
-      } else if (sVal < 0.5) {
-        prog = 1.0 + (sVal - 0.4) / 0.1; 
-      } else if (sVal < 0.65) {
-        prog = 2.0;
-      } else if (sVal < 0.75) {
-        prog = 2.0 + (sVal - 0.65) / 0.1;
-      } else {
-        prog = 3.0; 
-      }
+      if (sVal < 0.09) prog = sVal / 0.09;
+      else if (sVal < 0.25) prog = 1.0;
+      else if (sVal < 0.3) prog = 1.0 + (sVal - 0.25) / 0.05;
+      else if (sVal < 0.4) prog = 2.0;
+      else if (sVal < 0.45) prog = 2.0 + (sVal - 0.4) / 0.05;
+      else if (sVal < 0.55) prog = 3.0;
+      else if (sVal < 0.6) prog = 3.0 + (sVal - 0.55) / 0.05;
+      else if (sVal < 0.7) prog = 4.0;
+      else if (sVal < 0.75) prog = 4.0 + (sVal - 0.7) / 0.05;
+      else prog = 5.0;
       shaderRef.current.uniforms.uProgress.value = prog;
       
-      // 3D mouse mapping
       const vector = new THREE.Vector3(state.mouse.x, state.mouse.y, 0.5);
       vector.unproject(state.camera);
       const dir = vector.sub(state.camera.position).normalize();
-      const distance = -state.camera.position.z / dir.z;
-      const pos = state.camera.position.clone().add(dir.multiplyScalar(distance));
-      
+      const dist = -state.camera.position.z / dir.z;
+      const pos = state.camera.position.clone().add(dir.multiplyScalar(dist));
       const currentMouse = shaderRef.current.uniforms.uMouse.value as THREE.Vector3;
-      
       const localPos = pos.clone();
-      if (groupRef.current) {
-        localPos.sub(groupRef.current.position).divide(groupRef.current.scale);
-      }
-      
-      const moveDist = currentMouse.distanceTo(localPos);
-      if (moveDist > 0.15) {
+      if (groupRef.current) localPos.sub(groupRef.current.position).divide(groupRef.current.scale);
+      if (currentMouse.distanceTo(localPos) > 0.15) {
         shaderRef.current.uniforms.uRippleOrigin.value.copy(currentMouse);
         shaderRef.current.uniforms.uRippleTime.value = elapsed;
       }
-      
       currentMouse.lerp(localPos, 0.2);
     }
   });
@@ -396,36 +374,13 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
     <group ref={groupRef}>
       <points>
         <bufferGeometry>
-          <bufferAttribute 
-            attach="attributes-position" 
-            count={positions.length / 3} 
-            array={positions} 
-            itemSize={3} 
-          />
-          <bufferAttribute 
-            attach="attributes-targetPos1" 
-            count={posBox.length / 3} 
-            array={posBox} 
-            itemSize={3} 
-          />
-          <bufferAttribute 
-            attach="attributes-targetPos2" 
-            count={posHelix.length / 3} 
-            array={posHelix} 
-            itemSize={3} 
-          />
-          <bufferAttribute 
-            attach="attributes-targetPos3" 
-            count={posStars.length / 3} 
-            array={posStars} 
-            itemSize={3} 
-          />
-          <bufferAttribute 
-            attach="attributes-size" 
-            count={sizes.length} 
-            array={sizes} 
-            itemSize={1} 
-          />
+          <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} />
+          <bufferAttribute attach="attributes-targetPos1" count={posBox.length / 3} array={posBox} itemSize={3} />
+          <bufferAttribute attach="attributes-targetPos2" count={posHelix.length / 3} array={posHelix} itemSize={3} />
+          <bufferAttribute attach="attributes-targetPos3" count={posBulb.length / 3} array={posBulb} itemSize={3} />
+          <bufferAttribute attach="attributes-targetPos4" count={posStars.length / 3} array={posStars} itemSize={3} />
+          <bufferAttribute attach="attributes-targetPos5" count={posWand.length / 3} array={posWand} itemSize={3} />
+          <bufferAttribute attach="attributes-size" count={sizes.length} array={sizes} itemSize={1} />
         </bufferGeometry>
         <shaderMaterial
           ref={shaderRef}
@@ -440,10 +395,9 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
           }}
           transparent={true}
           depthWrite={false}
-          blending={THREE.NormalBlending} // Converted to NormalBlending exactly to assure independent dot coloring
+          blending={THREE.NormalBlending}
         />
       </points>
-      {/* Light Purple Inner Glow */}
       <mesh>
         <sphereGeometry args={[2.4, 32, 32]} />
         <shaderMaterial
