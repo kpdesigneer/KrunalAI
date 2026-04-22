@@ -337,12 +337,10 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       }
       else if (sVal < 0.25) { tx = -2.5; ty = 0.0; tz = 0.0; } 
       else if (sVal < 0.27) { 
-        const t = (sVal - 0.25) / 0.02;
         tx = -2.5; ty = 0.0; tz = 0.0; 
       }
       else if (sVal < 0.47) { tx = -2.5; ty = 0.0; tz = 0.0; } 
       else if (sVal < 0.49) { 
-        const t = (sVal - 0.47) / 0.02;
         tx = -2.5; ty = 0.0; tz = 0.0; 
       }
       else if (sVal < 0.65) { tx = -2.5; ty = 0.0; tz = 0.0; } 
@@ -353,7 +351,6 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       }
       else if (sVal < 0.78) { tx = 3.0; ty = 0.0; tz = 0.0; }
       else if (sVal < 0.80) { 
-        const t = (sVal - 0.78) / 0.02;
         tx = 3.0; ty = 0.0; tz = 0.0;
       }
       else { tx = 3.0; ty = 0.0; tz = 0.0; }
