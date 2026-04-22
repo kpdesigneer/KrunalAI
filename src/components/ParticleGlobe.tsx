@@ -355,18 +355,23 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       }
       groupRef.current.scale.set(finalScale, finalScale, finalScale);
       groupRef.current.position.set(tx, ty, tz);
-      const baseRotation = (sVal < 0.02 ? (sVal / 0.02) : 1) * 0.38;
-      const rotationFade = sVal >= 0.02 ? 0.0 : 1.0;
-      groupRef.current.rotation.y = baseRotation * rotationFade;
+      
+      const currentP = shaderRef.current.uniforms.uProgress.value;
+      const p01 = Math.max(0, Math.min(1, currentP));
+      const rotationFade = 1.0 - p01;
+      
+      groupRef.current.rotation.y = (0.38) * rotationFade;
 
       if (glowRef.current) {
-        const t = Math.max(0, Math.min(1, sVal / 0.02));
-        const glowScale = 1.05 * (1 - t) + 1.5 * t;
-        glowRef.current.scale.set(glowScale, glowScale, glowScale);
+        const p01 = Math.max(0, Math.min(1, shaderRef.current.uniforms.uProgress.value));
+        const glowScale = 1.05 * p01 + 1.5 * (1.0 - p01); // Simplified for glow follow
+        // Actually we want 1.05 at globe (p=0) and 1.5 at box (p=1)
+        const activeGlowScale = 1.05 * (1.0 - p01) + 1.5 * p01;
+        glowRef.current.scale.set(activeGlowScale, activeGlowScale, activeGlowScale);
         
         const glowMat = glowRef.current.material as THREE.ShaderMaterial;
         if (glowMat.uniforms.uGlowProgress) {
-          glowMat.uniforms.uGlowProgress.value = 1.0 - t; 
+          glowMat.uniforms.uGlowProgress.value = 1.0 - p01; 
         }
       }
     }
