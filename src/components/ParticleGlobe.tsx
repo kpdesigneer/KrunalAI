@@ -339,8 +339,8 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       groupRef.current.scale.set(finalScale, finalScale, finalScale);
       groupRef.current.position.x = targetX;
       
-      // Footer Exit: Start exit after the 90% stars hold point
-      const exitY = sVal > 0.9 ? (sVal - 0.9) / 0.1 * 10.0 : 0;
+      // Footer Exit: Disabled as per request to hold until 100%
+      const exitY = 0;
       groupRef.current.position.y = exitY;
       
       // Rotation logic: Fade out completely as we move to Tetra (sVal > 0.3)

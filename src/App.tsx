@@ -41,6 +41,14 @@ function App() {
     servicesRef.current.style.setProperty('--spotlight-opacity', '0');
   };
   
+  const scrollToSection = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+  
   return (
     <div className="min-h-screen bg-black w-full overflow-hidden">
       {/* Navigation */}
@@ -52,16 +60,35 @@ function App() {
 
         {/* Navigation Links (Center) */}
         <div className="hidden md:flex items-center gap-2 text-sm text-gray-400 font-medium">
-          <a href="#work" className="px-4 py-2 rounded hover:bg-zinc-800 hover:text-white transition-all duration-300">Work</a>
-          <a href="#company" className="px-4 py-2 rounded hover:bg-zinc-800 hover:text-white transition-all duration-300">Company</a>
-          <a href="#services" className="px-4 py-2 rounded hover:bg-zinc-800 hover:text-white transition-all duration-300">Services</a>
-          <a href="#contact" className="px-4 py-2 rounded hover:bg-zinc-800 hover:text-white transition-all duration-300">Contact</a>
+          {[
+            { name: 'Home', href: '#', id: 'home', onClick: (e: any) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
+            { name: 'Work', href: '#work', id: 'work', onClick: (e: any) => scrollToSection(e, 'work') },
+            { name: 'Services', href: '#services', id: 'services', onClick: (e: any) => scrollToSection(e, 'services') },
+            { name: 'Contact', href: '#contact', id: 'contact', onClick: (e: any) => scrollToSection(e, 'contact') }
+          ].map((item) => (
+            <a 
+              key={item.name}
+              href={item.href}
+              onClick={item.onClick}
+              className="px-5 py-2.5 rounded-lg relative group transition-all duration-500 hover:text-white"
+            >
+              {/* Spherical Glow Background (Hidden until hover) */}
+              <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-purple-600/20 blur-md -z-10" />
+              <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 border border-white/10 bg-white/[0.03] -z-10 shadow-[0_0_20px_rgba(168,85,247,0.15)]" />
+              
+              <span className="relative z-10">{item.name}</span>
+            </a>
+          ))}
         </div>
 
         {/* CTA Button (Right) */}
         <div className="min-w-[150px] flex justify-end">
-          <a href="#contact" className="group flex items-center gap-2 px-5 py-2.5 text-sm font-medium border border-white/20 rounded-full hover:border-white/50 transition-all duration-300">
-            <span>Start Your Project</span>
+          <a 
+            href="#contact" 
+            onClick={(e) => scrollToSection(e, 'contact')}
+            className="group flex items-center gap-2 px-5 py-2.5 text-sm font-medium border border-white/20 rounded-xl hover:border-white/50 transition-all duration-300"
+          >
+            <span>Contact Me</span>
             <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold group-hover:scale-110 transition-transform duration-300">↗</span>
           </a>
         </div>
@@ -114,9 +141,10 @@ function App() {
           </p>
           <a 
             href="#contact" 
-            className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-[#7c3aed] to-[#3b82f6] hover:from-[#6d28d9] hover:to-[#2563eb] shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105"
+            onClick={(e) => scrollToSection(e, 'contact')}
+            className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[#7c3aed] to-[#3b82f6] hover:from-[#6d28d9] hover:to-[#2563eb] shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105"
           >
-            Start Your Project
+            Contact Me
             <span className="group-hover:translate-x-0.5 transition-transform duration-300">→</span>
           </a>
         </motion.div>
@@ -184,7 +212,7 @@ function App() {
                     opacity: 1,
                     transition: { duration: 0.3, ease: "easeOut" }
                   }}
-                  className="glass-card p-8 group cursor-pointer overflow-hidden relative border border-white/5 hover:border-white/20 hover:bg-white/[0.03] transition-all duration-500 rounded-2xl shadow-none hover:shadow-2xl hover:shadow-purple-500/10"
+                  className="glass-card p-8 group cursor-pointer overflow-hidden relative border border-white/5 hover:border-white/20 hover:bg-white/[0.03] transition-all duration-500 rounded-xl shadow-none hover:shadow-2xl hover:shadow-purple-500/10"
                 >
                   {/* Animated vibrant inner glow */}
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-transparent to-blue-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[length:200%_200%] animate-[gradient-shift_5s_ease_infinite]" />
@@ -217,18 +245,16 @@ function App() {
                 Selected Work
               </h2>
               <p className="text-xl text-gray-400 max-w-xl">
-                A collection of technical challenges turned into digital products.
+                Design across mediums — from pixels to print and motion, built with clarity and intent.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
-                { id: '01', title: 'Synapse AI', cat: 'An intelligent platform for neural network visualization and real-time data processing.' },
-                { id: '02', title: 'Nexus App', cat: 'Modern fintech solution focusing on cross-border transactions and digital assets.' },
-                { id: '03', title: 'Healowave', cat: 'Healthcare dashboard designed for patient monitoring and medical data analytics.' },
-                { id: '04', title: 'Vanguard', cat: 'Cybersecurity monitor providing real-time threat detection and network mapping.' },
-                { id: '05', title: 'Aura', cat: 'Luxury e-commerce experience built with high-performance animations and minimal UI.' },
-                { id: '06', title: 'Bitfutures', cat: 'Web3 trading terminal featuring high-frequency data and crypto portfolio management.' }
+                { id: '01', title: 'Graphic Design', cat: 'Visual concepts crafted to communicate, engage, and create strong brand presence.' },
+                { id: '02', title: 'UI/UX Design', cat: 'User-focused interfaces designed for clarity, usability, and seamless digital experiences.' },
+                { id: '03', title: 'Print Design', cat: 'Tangible design solutions created for impact — from layouts to brand collaterals that translate beautifully in print.' },
+                { id: '04', title: 'Video Editing', cat: 'Dynamic visual storytelling through motion, transitions, and sound — crafted to capture attention and elevate content.' }
               ].map((project) => (
                 <motion.div 
                   key={project.id}
@@ -241,7 +267,7 @@ function App() {
                     opacity: 1,
                     transition: { duration: 0.3, ease: "easeOut" }
                   }}
-                  className="glass-card p-8 group cursor-pointer overflow-hidden relative border border-white/5 hover:border-white/20 hover:bg-white/[0.03] transition-all duration-500 rounded-2xl shadow-none hover:shadow-2xl hover:shadow-purple-500/10 aspect-square"
+                  className="glass-card p-8 group cursor-pointer overflow-hidden relative border border-white/5 hover:border-white/20 hover:bg-white/[0.03] transition-all duration-500 rounded-xl shadow-none hover:shadow-2xl hover:shadow-purple-500/10 aspect-square flex flex-col justify-between"
                 >
                   {/* Animated vibrant inner glow (Identical to What I do) */}
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-transparent to-blue-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[length:200%_200%] animate-[gradient-shift_5s_ease_infinite]" />
@@ -249,17 +275,19 @@ function App() {
                   {/* Animated border line on hover (Identical to What I do) */}
                   <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
 
-                  <div className="relative z-10">
-                    <div className="text-sm font-mono text-gray-500 mb-8 group-hover:text-purple-400 transition-colors duration-300">
-                      {project.id}
+                  <div className="relative z-10 h-full flex flex-col justify-between">
+                    <div>
+                      <div className="text-sm font-mono text-gray-500 mb-8 group-hover:text-purple-400 transition-colors duration-300">
+                        {project.id}
+                      </div>
+                      <h3 className="text-2xl font-semibold mb-4 text-white/90 group-hover:text-white transition-all duration-300">{project.title}</h3>
+                      <p className="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors duration-300 text-sm">
+                        {project.cat}
+                      </p>
                     </div>
-                    <h3 className="text-2xl font-semibold mb-4 text-white/90 group-hover:text-white transition-all duration-300">{project.title}</h3>
-                    <p className="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors duration-300 text-sm">
-                      {project.cat}
-                    </p>
                     
-                    <div className="mt-8 flex items-center gap-2 text-sm font-medium text-white/60 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                      <span className="group-hover:text-white">View Project</span>
+                    <div className="flex items-center gap-2 text-sm font-medium text-white/60 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                      <span className="group-hover:text-white">View Work</span>
                       <span className="group-hover:translate-x-1 transition-transform">→</span>
                     </div>
                   </div>
@@ -285,11 +313,11 @@ function App() {
           <div className="flex gap-16">
             <div className="flex flex-col gap-4 text-gray-400">
               <a href="#" className="hover:text-white transition-colors">Services</a>
-              <a href="#" className="hover:text-white transition-colors">Atom</a>
+              <a href="#" className="hover:text-white transition-colors">Portfolio</a>
               <a href="#" className="hover:text-white transition-colors">Demos</a>
             </div>
             <div className="flex flex-col gap-4 text-gray-400">
-              <a href="#" className="hover:text-white transition-colors">Resources</a>
+              <a href="#" className="hover:text-white transition-colors">Instagram</a>
               <a href="#" className="hover:text-white transition-colors">Contact</a>
             </div>
           </div>
