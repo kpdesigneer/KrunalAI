@@ -80,9 +80,9 @@ const vertexShader = `
     pos += dir * dynamicForce * 0.2 * frontFace * repelReduction;
     
     float speedFactor = 1.0 + clamp(uProgress, 0.0, 2.0) * 1.5;
-    pos.x += sin(uTime * 0.4 * speedFactor + size * 100.0) * 0.05;
-    pos.y += cos(uTime * 0.35 * speedFactor + size * 120.0) * 0.05;
-    pos.z += sin(uTime * 0.45 * speedFactor + size * 80.0) * 0.05;
+    pos.x += sin(uTime * 0.4 * speedFactor + size * 100.0) * 0.02;
+    pos.y += cos(uTime * 0.35 * speedFactor + size * 120.0) * 0.02;
+    pos.z += sin(uTime * 0.45 * speedFactor + size * 80.0) * 0.02;
 
     vec3 rippleDir = normalize(vec3(pos.x - uRippleOrigin.x, pos.y - uRippleOrigin.y, 0.0));
     pos += rippleDir * rippleForce * repelReduction;
@@ -102,8 +102,8 @@ const vertexShader = `
     float f4 = clamp(uProgress - 3.0, 0.0, 1.0);
     float f5 = clamp(uProgress - 4.0, 0.0, 1.0);
     
-    float baseVisibility = mix(step(0.725, visibilitySeed), step(0.75, visibilitySeed), f1);
-    baseVisibility = mix(baseVisibility, step(0.89, visibilitySeed), f2);
+    float baseVisibility = mix(step(0.725, visibilitySeed), step(0.6, visibilitySeed), f1);
+    baseVisibility = mix(baseVisibility, step(0.82, visibilitySeed), f2);
     baseVisibility = mix(baseVisibility, step(0.8, visibilitySeed), f3);
     baseVisibility = mix(baseVisibility, step(0.85, visibilitySeed), f4);
     float visibility = mix(baseVisibility, step(0.86, visibilitySeed), f5);
@@ -209,18 +209,18 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       } else {
         bx = (edgeIdxBox & 1) ? bSize : -bSize; by = (edgeIdxBox & 2) ? bSize : -bSize; bz = tE;
       }
-      pBox[i*3]   = bx + (Math.random() - 0.5) * 0.45;
-      pBox[i*3+1] = by + (Math.random() - 0.5) * 0.45;
-      pBox[i*3+2] = bz + (Math.random() - 0.5) * 0.45;
+      pBox[i*3]   = bx + (Math.random() - 0.5) * 0.42;
+      pBox[i*3+1] = by + (Math.random() - 0.5) * 0.42;
+      pBox[i*3+2] = bz + (Math.random() - 0.5) * 0.42;
 
       // 3. TETRA
       const eIdxT = i % 6;
       const vA = vertices[edges[eIdxT][0]];
       const vB = vertices[edges[eIdxT][1]];
       const tL = Math.random();
-      pHelix[i*3]   = (vA[0] + (vB[0] - vA[0]) * tL) + (Math.random() - 0.5) * 0.45;
-      pHelix[i*3+1] = (vA[1] + (vB[1] - vA[1]) * tL) + (Math.random() - 0.5) * 0.45;
-      pHelix[i*3+2] = (vA[2] + (vB[2] - vA[2]) * tL) + (Math.random() - 0.5) * 0.45;
+      pHelix[i*3]   = (vA[0] + (vB[0] - vA[0]) * tL) + (Math.random() - 0.5) * 0.30;
+      pHelix[i*3+1] = (vA[1] + (vB[1] - vA[1]) * tL) + (Math.random() - 0.5) * 0.30;
+      pHelix[i*3+2] = (vA[2] + (vB[2] - vA[2]) * tL) + (Math.random() - 0.5) * 0.30;
 
       // 4. BULB (Reference-Matched)
       const bType = Math.random();
@@ -272,7 +272,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       const pS = 2.5;
       const sX = Math.pow(Math.abs(Math.cos(tS)), pS) * Math.sign(Math.cos(tS)) * rS;
       const sY = Math.pow(Math.abs(Math.sin(tS)), pS) * Math.sign(Math.sin(tS)) * rS;
-      let sx, sy, sz = (Math.random() - 0.5) * 0.8;
+      let sx, sy, sz = (Math.random() - 0.5) * 0.3;
       if (sGrp < 6) { sx = sX * 1.6 - 1.0; sy = sY * 1.6; }
       else if (sGrp < 8) { sx = sX * 0.7 + 1.2; sy = sY * 0.7 + 1.0; }
       else { sx = sX * 0.55 + 1.4; sy = sY * 0.55 - 0.8; }
@@ -303,7 +303,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       
       px = tx;
       py = ty;
-      pz = (Math.random() - 0.5) * 0.2;
+      pz = (Math.random() - 0.5) * 0.1;
       
       pWand[i*3] = px * 1.2; pWand[i*3+1] = py * 1.2; pWand[i*3+2] = pz;
 
@@ -333,8 +333,8 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       groupRef.current.scale.set(finalScale, finalScale, finalScale);
       groupRef.current.position.x = targetX;
       groupRef.current.position.y = 0;
-      const baseRotation = (sVal < 0.15 ? (sVal / 0.15) : 1) * 0.38;
-      const rotationFade = sVal >= 0.4 ? 0.0 : (1.0 - Math.min(1.0, Math.max(0.0, (sVal - 0.3) / 0.1)));
+      const baseRotation = (sVal < 0.09 ? (sVal / 0.09) : 1) * 0.38;
+      const rotationFade = sVal >= 0.09 ? 0.0 : 1.0;
       groupRef.current.rotation.y = baseRotation * rotationFade;
     }
 
