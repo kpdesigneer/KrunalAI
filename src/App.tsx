@@ -207,6 +207,72 @@ function App() {
         </div>
       </section>
 
+      {/* Work Section (Exact Replica of 'What I do' Section) */}
+      <section id="work" className="py-32 px-4 relative z-10 bg-transparent">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row">
+          {/* Left 50% Content area */}
+          <div className="w-full md:w-[50%]">
+            <div className="mb-16">
+              <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 text-white animated-gradient-text cursor-default">
+                Selected Work
+              </h2>
+              <p className="text-xl text-gray-400 max-w-xl">
+                A collection of technical challenges turned into digital products.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                { id: '01', title: 'Synapse AI', cat: 'An intelligent platform for neural network visualization and real-time data processing.' },
+                { id: '02', title: 'Nexus App', cat: 'Modern fintech solution focusing on cross-border transactions and digital assets.' },
+                { id: '03', title: 'Healowave', cat: 'Healthcare dashboard designed for patient monitoring and medical data analytics.' },
+                { id: '04', title: 'Vanguard', cat: 'Cybersecurity monitor providing real-time threat detection and network mapping.' },
+                { id: '05', title: 'Aura', cat: 'Luxury e-commerce experience built with high-performance animations and minimal UI.' },
+                { id: '06', title: 'Bitfutures', cat: 'Web3 trading terminal featuring high-frequency data and crypto portfolio management.' }
+              ].map((project) => (
+                <motion.div 
+                  key={project.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 0.5, y: 0 }}
+                  viewport={{ once: true }}
+                  whileHover={{ 
+                    scale: 1.03,
+                    translateY: -5,
+                    opacity: 1,
+                    transition: { duration: 0.3, ease: "easeOut" }
+                  }}
+                  className="glass-card p-8 group cursor-pointer overflow-hidden relative border border-white/5 hover:border-white/20 hover:bg-white/[0.03] transition-all duration-500 rounded-2xl shadow-none hover:shadow-2xl hover:shadow-purple-500/10 aspect-square"
+                >
+                  {/* Animated vibrant inner glow (Identical to What I do) */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-transparent to-blue-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-[length:200%_200%] animate-[gradient-shift_5s_ease_infinite]" />
+                  
+                  {/* Animated border line on hover (Identical to What I do) */}
+                  <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+
+                  <div className="relative z-10">
+                    <div className="text-sm font-mono text-gray-500 mb-8 group-hover:text-purple-400 transition-colors duration-300">
+                      {project.id}
+                    </div>
+                    <h3 className="text-2xl font-semibold mb-4 text-white/90 group-hover:text-white transition-all duration-300">{project.title}</h3>
+                    <p className="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors duration-300 text-sm">
+                      {project.cat}
+                    </p>
+                    
+                    <div className="mt-8 flex items-center gap-2 text-sm font-medium text-white/60 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                      <span className="group-hover:text-white">View Project</span>
+                      <span className="group-hover:translate-x-1 transition-transform">→</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right 50% Empty space to mirror What I Do */}
+          <div className="hidden md:block w-[50%]" />
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-white/10 pt-20 pb-10 px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">

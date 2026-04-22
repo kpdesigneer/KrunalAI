@@ -11,7 +11,8 @@ const vertexShader = `
   
   attribute float size;
   attribute vec3 targetPos1; // Box
-  attribute vec3 targetPos2; // Helix
+  attribute vec3 targetPos2; // Tetra
+  attribute vec3 targetPos3; // Stars
   
   varying vec3 vColor;
   varying float vDepth;
@@ -22,14 +23,17 @@ const vertexShader = `
   void main() {
     float p1 = clamp(uProgress, 0.0, 1.0);
     float p2 = clamp(uProgress - 1.0, 0.0, 1.0);
+    float p3 = clamp(uProgress - 2.0, 0.0, 1.0);
     
     // Smooth easing
     p1 = smoothstep(0.0, 1.0, p1);
     p2 = smoothstep(0.0, 1.0, p2);
+    p3 = smoothstep(0.0, 1.0, p3);
 
     vec3 pos = position; // Sphere
     pos = mix(pos, targetPos1, p1);
     pos = mix(pos, targetPos2, p2);
+    pos = mix(pos, targetPos3, p3);
     
     // Rotate slowly on Y axis
     float angle = uTime * 0.05;
@@ -107,15 +111,26 @@ const vertexShader = `
     // Muted grey tones
     vColor = vec3(0.68, 0.68, 0.68);
     
-    // Dynamically hide 75% of particles during the globe phase (uProgress < 1.0)
-    // As uProgress moves to 1.0 (Box), all particles become visible.
+    // Dynamically manage particle density across states:
+    // TOTAL PARTICLES = 10,000
+    // Globe: 27.5% (2750), Box: 50% (5000), Tetra: 22% (2200), Stars: 60% (6000)
     float visibilitySeed = fract(size * 123.456);
     float globeFade = smoothstep(0.0, 1.0, uProgress);
-    float visibility = mix(step(0.75, visibilitySeed), 1.0, globeFade);
+    float tetraFade = smoothstep(1.0, 2.0, uProgress);
+    float starsFade = smoothstep(2.0, 3.0, uProgress);
     
-    // Affected particles double in size, return to normal when cursor moves away
-    // Multiplied by visibility to hide them during the globe phase
-    gl_PointSize = (size * 3.0576 + vTwinkle * 2.436) * (20.0 / vDepth) * (1.0 + vHighlight * 3.0) * visibility;
+    // Mix to Globe density (27.5% = step(0.725))
+    float baseVisibility = mix(step(0.725, visibilitySeed), step(0.5, visibilitySeed), globeFade);
+    // Mix to Tetra density (22% = step(0.78))
+    baseVisibility = mix(baseVisibility, step(0.78, visibilitySeed), tetraFade);
+    // Mix to Stars density (60% = step(0.4))
+    float visibility = mix(baseVisibility, step(0.4, visibilitySeed), starsFade);
+    
+    // Size multiplier: 1.0 (Globe/Box) -> 1.5 (Tetra) -> 1.2 (Stars)
+    float sizeMultiplier = mix(1.0, 1.5, tetraFade);
+    sizeMultiplier = mix(sizeMultiplier, 1.2, starsFade);
+    
+    gl_PointSize = (size * 3.0576 + vTwinkle * 2.436) * (20.0 / vDepth) * (1.0 + vHighlight * 3.0) * visibility * sizeMultiplier;
   }
 `;
 
@@ -187,89 +202,100 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
   // Track scrolling to morph shapes
   const smoothProgress = scrollY;
 
-  const particleCount = 9408; // Doubled again to 9408 particles for extreme density in the box state
+  const particleCount = 10000; // Increased to 10,000 to allow doubling the star density
 
   // Generate multi-shape geometry
-  const { positions, posBox, posHelix, sizes } = useMemo(() => {
+  const { positions, posBox, posHelix, posStars, sizes } = useMemo(() => {
     const pSphere = new Float32Array(particleCount * 3);
     const pBox = new Float32Array(particleCount * 3);
     const pHelix = new Float32Array(particleCount * 3);
+    const pStars = new Float32Array(particleCount * 3);
     const pointSizes = new Float32Array(particleCount);
     
     const radius = 2.5;
 
+    // Tetrahedral Geometry Constants
+    const sideSize = 1.8;
+    const vertices = [
+      [1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]
+    ].map(v => v.map(c => c * sideSize * 0.8));
+    const edges = [
+      [0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]
+    ];
+
     for(let i = 0; i < particleCount; i++) {
-      // 1. SPHERE
       const u = Math.random();
       const v = Math.random();
+      
+      // 1. SPHERE
       const theta = u * 2.0 * Math.PI;
       const phi = Math.acos(2.0 * v - 1.0);
-      // Eliminated inner volumetric scatter entirely—particles are now pulled perfectly tight against the exact circumference shell!
-      // Pull particles perfectly tight to circumference
       const rNoise = radius * (0.9995 + Math.random() * 0.001);
       pSphere[i*3]   = Math.sin(phi) * Math.cos(theta) * rNoise;
       pSphere[i*3+1] = Math.sin(phi) * Math.sin(theta) * rNoise;
       pSphere[i*3+2] = Math.cos(phi) * rNoise;
       
-      // 2. WIREFRAME BOX (Joining the Corners)
-      const edgeIdx = Math.floor(Math.random() * 12);
-      const boxSize = 1.6;
-      const tEdge = (Math.random() - 0.5) * 2 * boxSize; // Position along the edge
-      
+      // 2. WIREFRAME BOX
+      const edgeIdxBox = Math.floor(Math.random() * 12);
+      const boxSize = 1.44;
+      const tEdge = (Math.random() - 0.5) * 2 * boxSize;
       let bx, by, bz;
-      // 12 Edges of a cube
-      if (edgeIdx < 4) { // 4 edges along X
+      if (edgeIdxBox < 4) {
         bx = tEdge;
-        by = (edgeIdx & 1) ? boxSize : -boxSize;
-        bz = (edgeIdx & 2) ? boxSize : -boxSize;
-      } else if (edgeIdx < 8) { // 4 edges along Y
-        bx = (edgeIdx & 1) ? boxSize : -boxSize;
+        by = (edgeIdxBox & 1) ? boxSize : -boxSize;
+        bz = (edgeIdxBox & 2) ? boxSize : -boxSize;
+      } else if (edgeIdxBox < 8) {
+        bx = (edgeIdxBox & 1) ? boxSize : -boxSize;
         by = tEdge;
-        bz = (edgeIdx & 2) ? boxSize : -boxSize;
-      } else { // 4 edges along Z
-        bx = (edgeIdx & 1) ? boxSize : -boxSize;
-        by = (edgeIdx & 2) ? boxSize : -boxSize;
+        bz = (edgeIdxBox & 2) ? boxSize : -boxSize;
+      } else {
+        bx = (edgeIdxBox & 1) ? boxSize : -boxSize;
+        by = (edgeIdxBox & 2) ? boxSize : -boxSize;
         bz = tEdge;
       }
-      
-      const edgeNoise = 0.45; // Tripled from 0.15
+      const edgeNoise = 0.45;
       pBox[i*3]   = bx + (Math.random() - 0.5) * edgeNoise;
       pBox[i*3+1] = by + (Math.random() - 0.5) * edgeNoise;
       pBox[i*3+2] = bz + (Math.random() - 0.5) * edgeNoise;
 
-      // 3. CHEVRONS (</>) - Tightened Strokes
-      const group = i % 3;
-      let cx, cy, cz = (Math.random() - 0.5) * 0.8; 
-      const thickness = 0.15; // Tightened from chunky 0.8 state
-      
-      if (group === 0) { // <
-        const t = Math.random();
-        // Wider spread, shorter height for blunter angles
-        cx = -1.5 + (t > 0.5 ? (t - 0.5) * 1.5 : (0.5 - t) * 1.5);
-        cy = (t - 0.5) * 2.0; 
-        cx -= 0.5; // Brought even closer from 0.7
-        cx += (Math.random() - 0.5) * thickness;
-        cy += (Math.random() - 0.5) * thickness;
-      } else if (group === 1) { // /
-        const t = Math.random() - 0.5;
-        cx = -t * 0.8;
-        cy = t * 3.5; 
-        cx += (Math.random() - 0.5) * thickness;
-      } else { // >
-        const t = Math.random();
-        cx = 1.5 - (t > 0.5 ? (t - 0.5) * 1.5 : (0.5 - t) * 1.5);
-        cy = (t - 0.5) * 2.0; 
-        cx += 0.5; // Brought even closer from 0.7
-        cx += (Math.random() - 0.5) * thickness;
-        cy += (Math.random() - 0.5) * thickness;
+      // 3. TETRAHEDRON
+      const edgeIdxTetra = i % 6;
+      const vA = vertices[edges[edgeIdxTetra][0]];
+      const vB = vertices[edges[edgeIdxTetra][1]];
+      const tLerp = Math.random();
+      let tx = vA[0] + (vB[0] - vA[0]) * tLerp;
+      let ty = vA[1] + (vB[1] - vA[1]) * tLerp;
+      let tz = vA[2] + (vB[2] - vA[2]) * tLerp;
+      const tetraThickness = 0.45;
+      tx += (Math.random() - 0.5) * tetraThickness;
+      ty += (Math.random() - 0.5) * tetraThickness;
+      tz += (Math.random() - 0.5) * tetraThickness;
+      pHelix[i*3] = tx;
+      pHelix[i*3+1] = ty;
+      pHelix[i*3+2] = tz;
+
+      // 4. SPARKLE STARS
+      const starGroup = i % 10;
+      let sx, sy, sz = (Math.random() - 0.5) * 0.8;
+      const tStar = Math.random() * Math.PI * 2;
+      const rStar = 0.5 + Math.pow(Math.random(), 0.5) * 0.5; 
+      const pStar = 2.5;
+      const starX = Math.pow(Math.abs(Math.cos(tStar)), pStar) * Math.sign(Math.cos(tStar)) * rStar;
+      const starY = Math.pow(Math.abs(Math.sin(tStar)), pStar) * Math.sign(Math.sin(tStar)) * rStar;
+      if (starGroup < 6) {
+        sx = starX * 1.6 - 1.0; sy = starY * 1.6;
+      } else if (starGroup < 8) {
+        sx = starX * 0.7 + 1.2; sy = starY * 0.7 + 1.0;
+      } else {
+        sx = starX * 0.55 + 1.4; sy = starY * 0.55 - 0.8;
       }
-      pHelix[i*3] = cx;
-      pHelix[i*3+1] = cy;
-      pHelix[i*3+2] = cz;
+      pStars[i*3] = sx;
+      pStars[i*3+1] = sy;
+      pStars[i*3+2] = sz;
 
       pointSizes[i] = Math.random() * 1.5 + 0.5;
     }
-    return { positions: pSphere, posBox: pBox, posHelix: pHelix, sizes: pointSizes };
+    return { positions: pSphere, posBox: pBox, posHelix: pHelix, posStars: pStars, sizes: pointSizes };
   }, []);
 
   // Modern organic zoom-out entry using elastic damping
@@ -277,29 +303,46 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
   const targetScale = 0.8;
 
   useFrame((state) => {
-    const s = smoothProgress.get();
-    let prog;
-    if (s < 0.4) {
-      prog = s / 0.4; // Sphere to Box (0 to 1)
-    } else if (s < 0.5) {
-      prog = 1.0; // Hold Box
-    } else if (s < 0.7) {
-      prog = 1.0 + (s - 0.5) / 0.2; // Box to Chevrons (1 to 2)
-    } else {
-      prog = 2.0; // Hold Chevrons until end
-    }
-    
     const elapsed = state.clock.elapsedTime;
-
-    // Movement & Scale Logic (Internalized for perfect mouse tracking)
-    // Map scroll progress (0-0.3) to a horizontal shift of approx -3.2 units
-    const sVal = s;
-    const targetX = sVal < 0.3 ? (sVal / 0.3) * -3.2 : -3.2;
-    const currentScale = targetScale;
-
+    
     if (groupRef.current) {
+      const sVal = smoothProgress.get();
+      
+      // RECALIBRATED TIMELINE (V4):
+      // 0-20 (Globe-Box), 20-30 (Hold Box), 30-40 (Box-Tetra), 
+      // 40-55 (Hold Tetra), 55-65 (Tetra-Stars), 65-90 (Hold Stars), 90+ (Exit)
+      
+      let prog;
+      if (sVal < 0.2) {
+        prog = sVal / 0.2; 
+      } else if (sVal < 0.3) {
+        prog = 1.0; 
+      } else if (sVal < 0.4) {
+        prog = 1.0 + (sVal - 0.3) / 0.1; 
+      } else if (sVal < 0.55) {
+        prog = 2.0;
+      } else if (sVal < 0.65) {
+        prog = 2.0 + (sVal - 0.55) / 0.1;
+      } else {
+        prog = 3.0; 
+      }
+
+      // Track horizontal target position:
+      // 0-20: Center -> -2.5
+      // 55-65: -2.5 -> +3.0
+      let targetX;
+      if (sVal < 0.2) {
+        targetX = -2.5 * (sVal / 0.2);
+      } else if (sVal < 0.55) {
+        targetX = -2.5;
+      } else if (sVal < 0.65) {
+        targetX = -2.5 + (sVal - 0.55) / 0.1 * 5.5; 
+      } else {
+        targetX = 3.0;
+      }
+      
       // Entry zoom effect
-      let finalScale = currentScale;
+      let finalScale = targetScale;
       if (elapsed < entryDuration) {
         const t = elapsed;
         const decay = Math.exp(-1.8 * t);
@@ -311,19 +354,33 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       groupRef.current.scale.set(finalScale, finalScale, finalScale);
       groupRef.current.position.x = targetX;
       
-      // Footer Exit: Move the chevron upward with the page flow (0.8+)
-      const exitY = sVal > 0.8 ? (sVal - 0.8) / 0.2 * 15.0 : 0;
+      // Footer Exit: Start exit after the 90% stars hold point
+      const exitY = sVal > 0.9 ? (sVal - 0.9) / 0.1 * 10.0 : 0;
       groupRef.current.position.y = exitY;
       
-      // Counter-rotation to fix perspective distortion when on the left
-      // As it moves to targetX (-3.2), rotate it by ~22 degrees (0.38 rad) 
-      // so the front face stays parallel to the viewer.
-      const rotationTarget = (sVal < 0.3 ? (sVal / 0.3) : 1) * 0.38;
-      groupRef.current.rotation.y = rotationTarget;
+      // Rotation logic: Fade out completely as we move to Tetra (sVal > 0.3)
+      const baseRotation = (sVal < 0.15 ? (sVal / 0.15) : 1) * 0.38;
+      const rotationFade = sVal >= 0.4 ? 0.0 : (1.0 - Math.min(1.0, Math.max(0.0, (sVal - 0.3) / 0.1)));
+      groupRef.current.rotation.y = baseRotation * rotationFade;
     }
 
     if (shaderRef.current) {
       shaderRef.current.uniforms.uTime.value = elapsed;
+      const sVal = smoothProgress.get();
+      let prog;
+      if (sVal < 0.3) {
+        prog = sVal / 0.3; 
+      } else if (sVal < 0.4) {
+        prog = 1.0; 
+      } else if (sVal < 0.5) {
+        prog = 1.0 + (sVal - 0.4) / 0.1; 
+      } else if (sVal < 0.65) {
+        prog = 2.0;
+      } else if (sVal < 0.75) {
+        prog = 2.0 + (sVal - 0.65) / 0.1;
+      } else {
+        prog = 3.0; 
+      }
       shaderRef.current.uniforms.uProgress.value = prog;
       
       // 3D mouse mapping
@@ -335,13 +392,11 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       
       const currentMouse = shaderRef.current.uniforms.uMouse.value as THREE.Vector3;
       
-      // CRITICAL FIX: Align mouse effect with the translated group
       const localPos = pos.clone();
       if (groupRef.current) {
         localPos.sub(groupRef.current.position).divide(groupRef.current.scale);
       }
       
-      // Detect significant cursor movement to trigger ripple
       const moveDist = currentMouse.distanceTo(localPos);
       if (moveDist > 0.15) {
         shaderRef.current.uniforms.uRippleOrigin.value.copy(currentMouse);
@@ -372,6 +427,12 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
             attach="attributes-targetPos2" 
             count={posHelix.length / 3} 
             array={posHelix} 
+            itemSize={3} 
+          />
+          <bufferAttribute 
+            attach="attributes-targetPos3" 
+            count={posStars.length / 3} 
+            array={posStars} 
             itemSize={3} 
           />
           <bufferAttribute 
