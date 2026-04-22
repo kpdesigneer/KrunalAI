@@ -385,11 +385,17 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       else if (sVal < 0.80) prog = 4.0;
       else if (sVal < 0.82) prog = 4.0 + (sVal - 0.80) / 0.02;
       else prog = 5.0;
-      // Refined Elastic-Snap Spring Morph Logic
-      const stiffness = 100.0;
-      const damping = 7.0;
-      const dt = Math.min(delta, 0.1); 
+      // Conditional Physics: Projects vs Play Button
+      let stiffness = 100.0;
+      let damping = 7.0;
       
+      // If we are morphing to or holding the Play Button, use "Jelly Play"
+      if (prog > 4.0) {
+        stiffness = 40.0;
+        damping = 0.8;
+      }
+      
+      const dt = Math.min(delta, 0.1); 
       const currentP = shaderRef.current.uniforms.uProgress.value;
       const force = (prog - currentP) * stiffness;
       progressVel.current += (force - progressVel.current * damping) * dt;
