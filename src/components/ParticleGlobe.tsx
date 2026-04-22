@@ -123,8 +123,8 @@ const vertexShader = `
     float baseVisibility = mix(step(0.725, visibilitySeed), step(0.5, visibilitySeed), globeFade);
     // Mix to Tetra density (22% = step(0.78))
     baseVisibility = mix(baseVisibility, step(0.78, visibilitySeed), tetraFade);
-    // Mix to Stars density (60% = step(0.4))
-    float visibility = mix(baseVisibility, step(0.4, visibilitySeed), starsFade);
+    // Mix to Stars density (30% = step(0.7))
+    float visibility = mix(baseVisibility, step(0.7, visibilitySeed), starsFade);
     
     // Size multiplier: 1.0 (Globe/Box) -> 1.5 (Tetra) -> 1.2 (Stars)
     float sizeMultiplier = mix(1.0, 1.5, tetraFade);
