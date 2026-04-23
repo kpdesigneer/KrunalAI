@@ -5,6 +5,8 @@ import * as THREE from 'three';
 const vertexShader = `
   uniform float uTime;
   uniform vec3 uMouse;
+  uniform vec2 uResolution;
+  uniform float uPixelRatio;
   uniform float uProgress;
   uniform vec3 uRippleOrigin;
   uniform float uRippleTime;
@@ -52,9 +54,9 @@ const vertexShader = `
     pos.xz = rot * pos.xz;
     
     // Add fine ambient visual drift
-    pos.x += sin(uTime * 0.8 + pos.y * 3.0) * 0.02;
-    pos.y += cos(uTime * 1.0 + pos.z * 3.0) * 0.02;
-    pos.z += sin(uTime * 0.9 + pos.x * 3.0) * 0.02;
+    pos.x += sin(uTime * 0.8 + pos.y * 3.0) * 0.01;
+    pos.y += cos(uTime * 1.0 + pos.z * 3.0) * 0.01;
+    pos.z += sin(uTime * 0.9 + pos.x * 3.0) * 0.01;
     
     // 2D distance so the entire visible front repels uniformly
     float dist = distance(pos.xy, uMouse.xy);
@@ -89,9 +91,9 @@ const vertexShader = `
     
     float speedFactor = 1.0 + clamp(uProgress, 0.0, 2.0) * 1.5;
     float jitterTime = uTime * 2.0;
-    pos.x += sin(jitterTime + size * 43758.5453) * 0.04;
-    pos.y += cos(jitterTime + size * 12345.6789) * 0.04;
-    pos.z += sin(jitterTime + size * 98765.4321) * 0.04;
+    pos.x += sin(jitterTime + size * 43758.5453) * 0.05;
+    pos.y += cos(jitterTime + size * 12345.6789) * 0.05;
+    pos.z += sin(jitterTime + size * 98765.4321) * 0.05;
  
     vec3 rippleDir = normalize(vec3(pos.x - uRippleOrigin.x, pos.y - uRippleOrigin.y, 0.0));
     pos += rippleDir * rippleForce * repelReduction;
@@ -99,7 +101,11 @@ const vertexShader = `
     vHighlight = push * glowReduction * hollowFactor;
     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mvPosition;
-    vRim = smoothstep(0.0, 2.5, length(mvPosition.xy));
+    
+    // Project globe center to view space for a stable rim effect
+    vec4 globeCenterMV = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+    vRim = smoothstep(0.0, 2.5, distance(mvPosition.xy, globeCenterMV.xy));
+    
     vDepth = -mvPosition.z;
     vTwinkle = (sin(uTime * 1.5 + size * 100.0) * 0.5 + 0.5);
     vColor = mix(vec3(0.6), vec3(1.0), frontFace);
@@ -118,8 +124,11 @@ const vertexShader = `
     float visibility = mix(baseVisibility, step(0.86, visibilitySeed), f5);
     
     float sizeMultiplier = 3.0; 
+    float h = uResolution.y;
     
-    gl_PointSize = (1.3 * 3.0576 + vTwinkle * 2.436) * (20.0 / vDepth) * (1.0 + vHighlight * 3.0) * visibility * sizeMultiplier;
+    // Account for distance and resolution to keep particle-to-globe ratio stable
+    float attenuation = 18.0 / vDepth;
+    gl_PointSize = (1.2 * 3.0 + vTwinkle * 2.0) * attenuation * (1.0 + vHighlight * 2.5) * visibility * sizeMultiplier * (h * uPixelRatio / 1000.0);
   }
 `;
 
@@ -133,7 +142,8 @@ const fragmentShader = `
   void main() {
     float r = distance(gl_PointCoord, vec2(0.5));
     if (r > 0.5) discard;
-    float glow = max(0.0, (0.04 / (r + 0.01)) - 0.1);
+    // Sharpened falloff to prevent blooming on small resolutions
+    float glow = max(0.0, (0.035 / (r + 0.015)) - 0.12);
     float depthFade = clamp(1.0 - (vDepth - 5.0) / 10.0, 0.1, 1.0);
     vec3 targetOrbColor = vec3(0.65, 0.65, 1.0);
     vec3 finalColor = mix(vColor, targetOrbColor, vHighlight);
@@ -157,9 +167,9 @@ const glowFragmentShader = `
   varying vec3 vNormal;
   void main() {
     float edge = abs(dot(vNormal, vec3(0.0, 0.0, 1.0)));
-    float intensity = pow(edge, 2.5); // Bright core, soft surface fade
-    // Mix between bright sphere (0.30) and refined shapes (0.12)
-    float op = mix(0.12, 0.30, uGlowProgress);
+    float intensity = pow(edge, 1.1); // Even broader glow for a volumetric feel
+    // Mix between bright sphere (0.28) and refined shapes (0.06)
+    float op = mix(0.06, 0.28, uGlowProgress);
     gl_FragColor = vec4(0.4, 0.4, 1.0, intensity * op); 
   }
 `;
@@ -355,28 +365,26 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       }
       groupRef.current.scale.set(finalScale, finalScale, finalScale);
       groupRef.current.position.set(tx, ty, tz);
-      
-      const currentP = shaderRef.current.uniforms.uProgress.value;
-      // Allow rotation to overshoot for the Globe snap
-      const rotationFade = 1.0 - currentP;
-      groupRef.current.rotation.y = (0.38) * Math.max(0, Math.min(1.2, rotationFade));
+      const baseRotation = (sVal < 0.02 ? (sVal / 0.02) : 1) * 0.38;
+      const rotationFade = sVal >= 0.02 ? 0.0 : 1.0;
+      groupRef.current.rotation.y = baseRotation * rotationFade;
 
       if (glowRef.current) {
-        const p = shaderRef.current.uniforms.uProgress.value;
-        // Allow glow scale to overshoot for the snap
-        const activeGlowScale = 1.05 * (1.0 - p) + 1.5 * p;
-        glowRef.current.scale.set(activeGlowScale, activeGlowScale, activeGlowScale);
+        const t = Math.max(0, Math.min(1, sVal / 0.02));
+        const glowScale = 1.05 * (1 - t) + 1.5 * t;
+        glowRef.current.scale.set(glowScale, glowScale, glowScale);
         
         const glowMat = glowRef.current.material as THREE.ShaderMaterial;
         if (glowMat.uniforms.uGlowProgress) {
-          // Allow glow intensity to overshoot for the snap
-          glowMat.uniforms.uGlowProgress.value = 1.0 - p; 
+          glowMat.uniforms.uGlowProgress.value = 1.0 - t; 
         }
       }
     }
 
     if (shaderRef.current) {
       shaderRef.current.uniforms.uTime.value = elapsed;
+      shaderRef.current.uniforms.uResolution.value.set(state.size.width, state.size.height);
+      shaderRef.current.uniforms.uPixelRatio.value = state.viewport.dpr;
       const sVal = smoothProgress.get();
       let prog;
       if (sVal < 0.02) prog = sVal / 0.02;
@@ -389,7 +397,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       else if (sVal < 0.80) prog = 4.0;
       else if (sVal < 0.82) prog = 4.0 + (sVal - 0.80) / 0.02;
       else prog = 5.0;
-      // Refined Elastic-Snap Spring Morph Logic (Uniform across all shapes)
+      // Refined Elastic-Snap Spring Morph Logic
       const stiffness = 100.0;
       const damping = 7.0;
       const dt = Math.min(delta, 0.1); 
@@ -434,6 +442,8 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
           uniforms={{
             uTime: { value: 0 },
             uMouse: { value: new THREE.Vector3(999, 999, 999) },
+            uResolution: { value: new THREE.Vector2(1000, 1000) },
+            uPixelRatio: { value: 1.0 },
             uProgress: { value: 0 },
             uRippleOrigin: { value: new THREE.Vector3(999, 999, 999) },
             uRippleTime: { value: -10 }

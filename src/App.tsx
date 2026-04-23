@@ -122,33 +122,33 @@ function App() {
             ref={headlineRef}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
-            className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] flex flex-wrap justify-center gap-x-[0.3em] pb-3 cursor-default"
+            className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.15] flex flex-wrap justify-center gap-x-[0.3em] pb-8 cursor-default"
           >
-            {"I build what others ".split(" ").map((word, wordIdx) => (
+            {"I build what others".split(" ").map((word, wordIdx) => (
               <motion.span
                 key={wordIdx}
-                initial={{ opacity: 0, y: 40, filter: "blur(15px)" }}
+                initial={{ opacity: 0, y: 40, filter: "blur(40px)" }}
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 transition={{ 
-                  duration: 1.5,
+                  duration: 2.5,
                   delay: wordIdx * 0.15,
                   ease: [0.22, 1, 0.36, 1]
                 }}
-                className="inline-block animated-gradient-text py-2"
+                className="inline-block animated-gradient-text py-4"
               >
                 {word}
               </motion.span>
             ))}
-            <em className="italic font-extrabold pointer-events-none flex">
+            <em className="italic font-extrabold pointer-events-none">
               <motion.span
-                initial={{ opacity: 0, y: 40, filter: "blur(15px)" }}
+                initial={{ opacity: 0, y: 40, filter: "blur(40px)" }}
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 transition={{ 
-                  duration: 1.5,
+                  duration: 2.5,
                   delay: 4 * 0.15,
                   ease: [0.22, 1, 0.36, 1]
                 }}
-                className="inline-block animated-gradient-text py-2"
+                className="inline-block animated-gradient-text py-4"
               >
                 imagine.
               </motion.span>
