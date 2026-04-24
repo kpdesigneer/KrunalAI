@@ -25,25 +25,26 @@ const vertexShader = `
   varying float vRim;
   
   void main() {
-    float p1 = clamp(uProgress, 0.0, 1.0);
-    float p2 = clamp(uProgress - 1.0, 0.0, 1.0);
-    float p3 = clamp(uProgress - 2.0, 0.0, 1.0);
-    float p4 = clamp(uProgress - 3.0, 0.0, 1.0);
-    float p5 = clamp(uProgress - 4.0, 0.0, 1.0);
+    float p1 = uProgress;
+    float p2 = uProgress - 1.0;
+    float p3 = uProgress - 2.0;
+    float p4 = uProgress - 3.0;
+    float p5 = uProgress - 4.0;
     
-    // Smooth easing
-    p1 = smoothstep(0.0, 1.0, p1);
-    p2 = smoothstep(0.0, 1.0, p2);
-    p3 = smoothstep(0.0, 1.0, p3);
-    p4 = smoothstep(0.0, 1.0, p4);
-    p5 = smoothstep(0.0, 1.0, p5);
+    // Dynamic Lock: Allow overshoot for the 'active' transition, 
+    // but lock previous shapes to 1.0 to prevent accumulation.
+    if (uProgress > 1.2) p1 = 1.0; else p1 = clamp(p1, 0.0, 1.15);
+    if (uProgress > 2.2) p2 = 1.0; else p2 = clamp(p2, 0.0, 1.15);
+    if (uProgress > 3.2) p3 = 1.0; else p3 = clamp(p3, 0.0, 1.15);
+    if (uProgress > 4.2) p4 = 1.0; else p4 = clamp(p4, 0.0, 1.15);
+    p5 = clamp(p5, 0.0, 1.15);
 
     vec3 pos = position; // Sphere
-    pos = mix(pos, targetPos1, p1);
-    pos = mix(pos, targetPos2, p2);
-    pos = mix(pos, targetPos3, p3);
-    pos = mix(pos, targetPos4, p4);
-    pos = mix(pos, targetPos5, p5);
+    if (p1 > 0.0) pos = mix(pos, targetPos1, p1);
+    if (p2 > 0.0) pos = mix(pos, targetPos2, p2);
+    if (p3 > 0.0) pos = mix(pos, targetPos3, p3);
+    if (p4 > 0.0) pos = mix(pos, targetPos4, p4);
+    if (p5 > 0.0) pos = mix(pos, targetPos5, p5);
     
     // Rotate for Globe, Box, Triangle, and Bulb
     // Fade out before Stars (3.2 -> 4.0)
@@ -179,7 +180,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
   const glowRef = useRef<THREE.Mesh>(null);
   const groupRef = useRef<THREE.Group>(null);
   const smoothProgress = scrollY;
-  const particleCount = 10000;
+  const particleCount = 20000;
   const progressVel = useRef(0); 
 
   const { positions, posBox, posHelix, posBulb, posStars, posWand, sizes } = useMemo(() => {
@@ -284,18 +285,33 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       }
       pBulb[i*3] = blbX * 1.6; pBulb[i*3+1] = blbY * 1.6; pBulb[i*3+2] = blbZ * 1.6;
 
-      // 5. STARS
-      const sGrp = i % 10;
-      const tS = Math.random() * Math.PI * 2;
-      const rS = 0.5 + Math.pow(Math.random(), 0.5) * 0.5; 
-      const pS = 2.5;
-      const sX = Math.pow(Math.abs(Math.cos(tS)), pS) * Math.sign(Math.cos(tS)) * rS;
-      const sY = Math.pow(Math.abs(Math.sin(tS)), pS) * Math.sign(Math.sin(tS)) * rS;
-      let sx, sy, sz = (Math.random() - 0.5) * 0.3;
-      if (sGrp < 6) { sx = sX * 1.6; sy = sY * 1.6; } // Removed -1.0 offset
-      else if (sGrp < 8) { sx = sX * 0.7 + 1.2; sy = sY * 0.7 + 1.0; }
-      else { sx = sX * 0.55 + 1.4; sy = sY * 0.55 - 0.8; }
-      pStars[i*3] = sx - 0.5; pStars[i*3+1] = sy - 0.2; pStars[i*3+2] = sz; // Global centering
+      // 5. STARS (Uniform Rejection Sampling)
+      let sx, sy, sz = (Math.random() - 0.5) * 0.2;
+      const sGrp = i % 100;
+      
+      let stX = 0, stY = 0;
+      // Rejection sample for a clean 4-pointed star (hypocycloid-like)
+      let stAttempts = 0;
+      while (stAttempts < 100) {
+        const testX = (Math.random() - 0.5) * 2.1;
+        const testY = (Math.random() - 0.5) * 2.1;
+        // Balanced 0.5 power for sharper points and more elegant side-curves
+        if (Math.pow(Math.abs(testX), 0.5) + Math.pow(Math.abs(testY), 0.5) <= 1.05) {
+          stX = testX;
+          stY = testY;
+          break;
+        }
+        stAttempts++;
+      }
+
+      if (sGrp < 72) { 
+        sx = stX * 1.5; sy = stY * 1.5; 
+      } else if (sGrp < 86) { 
+        sx = stX * 0.6 + 1.2; sy = stY * 0.6 + 1.0; 
+      } else { 
+        sx = stX * 0.5 + 1.4; sy = stY * 0.5 - 0.8; 
+      }
+      pStars[i*3] = sx - 0.5; pStars[i*3+1] = sy - 0.2; pStars[i*3+2] = sz;
 
       // 6. CIRCULAR PLAY BUTTON (Hollow Triangle Cutout)
       let px, py, pz;
@@ -310,15 +326,15 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       
       // Rejection sampling to create the hollow triangle
       // Triangle: A(0.8, 0), B(-0.4, 0.6), C(-0.4, -0.6)
-      let attempts = 0;
-      while (tx >= -0.4 && tx <= 0.8 && Math.abs(ty) <= 0.5 * (0.8 - tx) && attempts < 10) {
+      let pbAttempts = 0;
+      while (tx >= -0.4 && tx <= 0.8 && Math.abs(ty) <= 0.5 * (0.8 - tx) && pbAttempts < 10) {
         const uNew = Math.random();
         const vNew = Math.random();
         const rNew = Math.sqrt(uNew) * 1.6;
         const thetaNew = vNew * Math.PI * 2;
         tx = Math.cos(thetaNew) * rNew;
         ty = Math.sin(thetaNew) * rNew;
-        attempts++;
+        pbAttempts++;
       }
       
       px = tx;
@@ -398,7 +414,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       else if (sVal < 0.82) prog = 4.0 + (sVal - 0.80) / 0.02;
       else prog = 5.0;
       // Refined Elastic-Snap Spring Morph Logic
-      const stiffness = 100.0;
+      const stiffness = 120.0;
       const damping = 7.0;
       const dt = Math.min(delta, 0.1); 
       
