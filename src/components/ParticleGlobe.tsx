@@ -118,10 +118,10 @@ const vertexShader = `
     float f4 = clamp(uProgress - 3.0, 0.0, 1.0);
     float f5 = clamp(uProgress - 4.0, 0.0, 1.0);
     
-    float baseVisibility = mix(step(0.725, visibilitySeed), step(0.6, visibilitySeed), f1);
+    float baseVisibility = mix(step(0.835, visibilitySeed), step(0.6, visibilitySeed), f1);
     baseVisibility = mix(baseVisibility, step(0.82, visibilitySeed), f2);
     baseVisibility = mix(baseVisibility, step(0.8, visibilitySeed), f3);
-    baseVisibility = mix(baseVisibility, step(0.85, visibilitySeed), f4);
+    baseVisibility = mix(baseVisibility, step(0.9475, visibilitySeed), f4);
     float visibility = mix(baseVisibility, step(0.86, visibilitySeed), f5);
     
     float sizeMultiplier = 3.0; 
@@ -212,7 +212,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       const v = Math.random();
       const theta = u * 2.0 * Math.PI;
       const phi = Math.acos(2.0 * v - 1.0);
-      const rNoise = radius * (0.9995 + Math.random() * 0.001);
+      const rNoise = radius;
       pSphere[i*3]   = Math.sin(phi) * Math.cos(theta) * rNoise;
       pSphere[i*3+1] = Math.sin(phi) * Math.sin(theta) * rNoise;
       pSphere[i*3+2] = Math.cos(phi) * rNoise;
@@ -362,10 +362,6 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
         tx = 0 * (1 - t) + -2.5 * t; 
         ty = 0; tz = 0;
       }
-      else if (sVal < 0.20) { tx = -2.5; ty = 0.0; tz = 0.0; } 
-      else if (sVal < 0.22) { tx = -2.5; ty = 0.0; tz = 0.0; } 
-      else if (sVal < 0.40) { tx = -2.5; ty = 0.0; tz = 0.0; } 
-      else if (sVal < 0.42) { tx = -2.5; ty = 0.0; tz = 0.0; } 
       else if (sVal < 0.60) { tx = -2.5; ty = 0.0; tz = 0.0; } 
       else if (sVal < 0.62) { 
         const t = (sVal - 0.60) / 0.02;
@@ -374,16 +370,18 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       }
       else { tx = 3.0; ty = 0.0; tz = 0.0; }
       
+      groupRef.current.position.set(tx, ty, tz);
+
+      const baseRotation = (sVal < 0.02 ? (sVal / 0.02) : 1) * 0.38;
+      const rotationFade = sVal >= 0.02 ? 0.0 : 1.0;
+      groupRef.current.rotation.y = baseRotation * rotationFade;
+
       let finalScale = targetScale;
       if (elapsed < entryDuration) {
         const t = elapsed;
         finalScale *= (1.0 + (0.7 * Math.exp(-1.8 * t) * Math.cos(4.0 * t)));
       }
       groupRef.current.scale.set(finalScale, finalScale, finalScale);
-      groupRef.current.position.set(tx, ty, tz);
-      const baseRotation = (sVal < 0.02 ? (sVal / 0.02) : 1) * 0.38;
-      const rotationFade = sVal >= 0.02 ? 0.0 : 1.0;
-      groupRef.current.rotation.y = baseRotation * rotationFade;
 
       if (glowRef.current) {
         const t = Math.max(0, Math.min(1, sVal / 0.02));
