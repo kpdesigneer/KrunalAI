@@ -119,7 +119,7 @@ const vertexShader = `
     float f5 = clamp(uProgress - 4.0, 0.0, 1.0);
     
     float baseVisibility = mix(step(0.835, visibilitySeed), step(0.6, visibilitySeed), f1);
-    baseVisibility = mix(baseVisibility, step(0.82, visibilitySeed), f2);
+    baseVisibility = mix(baseVisibility, step(0.64, visibilitySeed), f2);
     baseVisibility = mix(baseVisibility, step(0.8, visibilitySeed), f3);
     baseVisibility = mix(baseVisibility, step(0.9475, visibilitySeed), f4);
     float visibility = mix(baseVisibility, step(0.86, visibilitySeed), f5);
@@ -194,7 +194,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
     
     const radius = 2.5;
     const sideSize = 1.8;
-    const angleZ = 10 * (Math.PI / 180);
+    const angleZ = -25 * (Math.PI / 180);
     const cosZ = Math.cos(angleZ);
     const sinZ = Math.sin(angleZ);
     
@@ -229,18 +229,18 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       } else {
         bx = (edgeIdxBox & 1) ? bSize : -bSize; by = (edgeIdxBox & 2) ? bSize : -bSize; bz = tE;
       }
-      pBox[i*3]   = bx + (Math.random() - 0.5) * 0.42;
-      pBox[i*3+1] = by + (Math.random() - 0.5) * 0.42;
-      pBox[i*3+2] = bz + (Math.random() - 0.5) * 0.42;
+      pBox[i*3]   = bx + (Math.random() - 0.5) * 0.7;
+      pBox[i*3+1] = by + (Math.random() - 0.5) * 0.7;
+      pBox[i*3+2] = bz + (Math.random() - 0.5) * 0.7;
 
       // 3. TETRA
       const eIdxT = i % 6;
       const vA = vertices[edges[eIdxT][0]];
       const vB = vertices[edges[eIdxT][1]];
       const tL = Math.random();
-      pHelix[i*3]   = (vA[0] + (vB[0] - vA[0]) * tL) + (Math.random() - 0.5) * 0.30;
-      pHelix[i*3+1] = (vA[1] + (vB[1] - vA[1]) * tL) + (Math.random() - 0.5) * 0.30;
-      pHelix[i*3+2] = (vA[2] + (vB[2] - vA[2]) * tL) + (Math.random() - 0.5) * 0.30;
+      pHelix[i*3]   = (vA[0] + (vB[0] - vA[0]) * tL) + (Math.random() - 0.5) * 0.7;
+      pHelix[i*3+1] = (vA[1] + (vB[1] - vA[1]) * tL) + (Math.random() - 0.5) * 0.7;
+      pHelix[i*3+2] = (vA[2] + (vB[2] - vA[2]) * tL) + (Math.random() - 0.5) * 0.7;
 
       // 4. BULB (Reference-Matched)
       const bType = Math.random();
@@ -412,8 +412,8 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       else if (sVal < 0.82) prog = 4.0 + (sVal - 0.80) / 0.02;
       else prog = 5.0;
       // Refined Elastic-Snap Spring Morph Logic
-      const stiffness = 120.0;
-      const damping = 7.0;
+      const stiffness = 60.0;
+      const damping = 4.5;
       const dt = Math.min(delta, 0.1); 
       
       const currentP = shaderRef.current.uniforms.uProgress.value;
