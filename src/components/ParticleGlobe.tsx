@@ -80,15 +80,14 @@ const vertexShader = `
     
     float dynamicForce = (push + bounce + naturalRipple); 
     vec3 dir = normalize(vec3(pos.x - uMouse.x, pos.y - uMouse.y, 0.0));
-    float repelReduction = mix(1.5, 1.0, clamp(uProgress, 0.0, 1.0));
-    float glowReduction = mix(0.6, 0.3, clamp(uProgress, 0.0, 1.0));
     
-    float isNotSphere = clamp(uProgress, 0.0, 1.0);
-    float hollowFactor = mix(1.0, smoothstep(0.0, radius * 0.4, dist), isNotSphere);
+    // Apply the exact same strong hover scaling, color intensity, and physics to all shapes
+    float repelReduction = 1.5;
+    float glowReduction = 0.6;
+    float hollowFactor = 1.0;
     
-    // Increased repel for non-sphere shapes
+    // Universal repel push
     pos += dir * dynamicForce * 0.2 * frontFace * repelReduction;
-    pos.z -= (1.0 - hollowFactor) * 0.4 * frontFace; // Hollow depth push
     
     float speedFactor = 1.0 + clamp(uProgress, 0.0, 2.0) * 1.5;
     float jitterTime = uTime * 2.0;
@@ -118,8 +117,8 @@ const vertexShader = `
     float f4 = clamp(uProgress - 3.0, 0.0, 1.0);
     float f5 = clamp(uProgress - 4.0, 0.0, 1.0);
     
-    float baseVisibility = mix(step(0.835, visibilitySeed), step(0.6, visibilitySeed), f1);
-    baseVisibility = mix(baseVisibility, step(0.64, visibilitySeed), f2);
+    float baseVisibility = mix(step(0.835, visibilitySeed), step(0.8, visibilitySeed), f1);
+    baseVisibility = mix(baseVisibility, step(0.82, visibilitySeed), f2);
     baseVisibility = mix(baseVisibility, step(0.8, visibilitySeed), f3);
     baseVisibility = mix(baseVisibility, step(0.9475, visibilitySeed), f4);
     float visibility = mix(baseVisibility, step(0.86, visibilitySeed), f5);
@@ -129,11 +128,15 @@ const vertexShader = `
     
     // Account for distance and resolution to keep particle-to-globe ratio stable
     float attenuation = 18.0 / vDepth;
-    gl_PointSize = (1.2 * 3.0 + vTwinkle * 2.0) * attenuation * (1.0 + vHighlight * 2.5) * visibility * sizeMultiplier * (h * uPixelRatio / 1000.0);
+    
+    // Apply the ~12px size globally. We multiply by attenuation to preserve the 3D depth effect!
+    // (3.333 * attenuation of 3.6 at the center equals approx 12.0 pixels)
+    gl_PointSize = 3.333 * attenuation * uPixelRatio * visibility * (1.0 + vHighlight * 3.5);
   }
 `;
 
 const fragmentShader = `
+  uniform float uProgress;
   varying vec3 vColor;
   varying float vDepth;
   varying float vTwinkle;
@@ -143,13 +146,22 @@ const fragmentShader = `
   void main() {
     float r = distance(gl_PointCoord, vec2(0.5));
     if (r > 0.5) discard;
-    // Sharpened falloff to prevent blooming on small resolutions
-    float glow = max(0.0, (0.035 / (r + 0.015)) - 0.12);
+    
+    // Normal soft radial falloff
+    float radialGlow = max(0.0, (0.035 / (r + 0.015)) - 0.12);
+    
     float depthFade = clamp(1.0 - (vDepth - 5.0) / 10.0, 0.1, 1.0);
-    vec3 targetOrbColor = vec3(0.65, 0.65, 1.0);
-    vec3 finalColor = mix(vColor, targetOrbColor, vHighlight);
+    vec3 targetOrbColor = vec3(128.0/255.0, 128.0/255.0, 249.0/255.0);
+    
+    // Use white as the base color for ALL shapes, keeping the slight hover tint
+    vec3 finalColor = mix(vec3(1.0), targetOrbColor, vHighlight);
     float baseAlpha = depthFade * (0.7 + vTwinkle * 0.3);
     float rimFade = mix(0.5, 1.0, vRim); 
+    
+    // Apply the 35% Gaussian feathered edge and 80% glow to ALL shapes
+    float core = 1.0 - smoothstep(0.0, 0.35, r); 
+    float glow = core + (radialGlow * 0.80);
+    
     float finalAlpha = mix(baseAlpha * rimFade, 0.75, vHighlight) * glow * 1.28; 
     gl_FragColor = vec4(finalColor, finalAlpha);
   }
@@ -229,18 +241,18 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       } else {
         bx = (edgeIdxBox & 1) ? bSize : -bSize; by = (edgeIdxBox & 2) ? bSize : -bSize; bz = tE;
       }
-      pBox[i*3]   = bx + (Math.random() - 0.5) * 0.7;
-      pBox[i*3+1] = by + (Math.random() - 0.5) * 0.7;
-      pBox[i*3+2] = bz + (Math.random() - 0.5) * 0.7;
+      pBox[i*3]   = bx + (Math.random() - 0.5) * 0.47;
+      pBox[i*3+1] = by + (Math.random() - 0.5) * 0.47;
+      pBox[i*3+2] = bz + (Math.random() - 0.5) * 0.47;
 
       // 3. TETRA
       const eIdxT = i % 6;
       const vA = vertices[edges[eIdxT][0]];
       const vB = vertices[edges[eIdxT][1]];
       const tL = Math.random();
-      pHelix[i*3]   = (vA[0] + (vB[0] - vA[0]) * tL) + (Math.random() - 0.5) * 0.7;
-      pHelix[i*3+1] = (vA[1] + (vB[1] - vA[1]) * tL) + (Math.random() - 0.5) * 0.7;
-      pHelix[i*3+2] = (vA[2] + (vB[2] - vA[2]) * tL) + (Math.random() - 0.5) * 0.7;
+      pHelix[i*3]   = (vA[0] + (vB[0] - vA[0]) * tL) + (Math.random() - 0.5) * 0.47;
+      pHelix[i*3+1] = (vA[1] + (vB[1] - vA[1]) * tL) + (Math.random() - 0.5) * 0.47;
+      pHelix[i*3+2] = (vA[2] + (vB[2] - vA[2]) * tL) + (Math.random() - 0.5) * 0.47;
 
       // 4. BULB (Reference-Matched)
       const bType = Math.random();
