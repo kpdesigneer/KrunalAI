@@ -14,9 +14,8 @@ const vertexShader = `
   attribute float size;
   attribute vec3 targetPos1; // Box
   attribute vec3 targetPos2; // Tetra
-  attribute vec3 targetPos3; // Bulb
-  attribute vec3 targetPos4; // Stars
-  attribute vec3 targetPos5; // Play Button
+  attribute vec3 targetPos3; // Stars
+  attribute vec3 targetPos4; // Play Button
   
   varying vec3 vColor;
   varying float vDepth;
@@ -29,26 +28,23 @@ const vertexShader = `
     float p2 = uProgress - 1.0;
     float p3 = uProgress - 2.0;
     float p4 = uProgress - 3.0;
-    float p5 = uProgress - 4.0;
     
-    // Dynamic Lock: Allow overshoot for the 'active' transition, 
+    // Dynamic Lock: Allow overshoot for the 'active' transition,
     // but lock previous shapes to 1.0 to prevent accumulation.
     if (uProgress > 1.2) p1 = 1.0; else p1 = clamp(p1, 0.0, 1.15);
     if (uProgress > 2.2) p2 = 1.0; else p2 = clamp(p2, 0.0, 1.15);
     if (uProgress > 3.2) p3 = 1.0; else p3 = clamp(p3, 0.0, 1.15);
-    if (uProgress > 4.2) p4 = 1.0; else p4 = clamp(p4, 0.0, 1.15);
-    p5 = clamp(p5, 0.0, 1.15);
+    p4 = clamp(p4, 0.0, 1.15);
 
     vec3 pos = position; // Sphere
     if (p1 > 0.0) pos = mix(pos, targetPos1, p1);
     if (p2 > 0.0) pos = mix(pos, targetPos2, p2);
     if (p3 > 0.0) pos = mix(pos, targetPos3, p3);
     if (p4 > 0.0) pos = mix(pos, targetPos4, p4);
-    if (p5 > 0.0) pos = mix(pos, targetPos5, p5);
     
-    // Rotate for Globe, Box, Triangle, and Bulb
-    // Fade out before Stars (3.2 -> 4.0)
-    float rotationFade = smoothstep(4.0, 3.2, uProgress);
+    // Rotate for Globe, Box, Triangle
+    // Fade out before Stars (2.2 -> 3.0)
+    float rotationFade = smoothstep(3.0, 2.2, uProgress);
     
     float angle = uTime * 0.05 * rotationFade;
     mat2 rot = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
@@ -115,13 +111,11 @@ const vertexShader = `
     float f2 = clamp(uProgress - 1.0, 0.0, 1.0);
     float f3 = clamp(uProgress - 2.0, 0.0, 1.0);
     float f4 = clamp(uProgress - 3.0, 0.0, 1.0);
-    float f5 = clamp(uProgress - 4.0, 0.0, 1.0);
     
     float baseVisibility = mix(step(0.835, visibilitySeed), step(0.8, visibilitySeed), f1);
     baseVisibility = mix(baseVisibility, step(0.82, visibilitySeed), f2);
-    baseVisibility = mix(baseVisibility, step(0.8, visibilitySeed), f3);
-    baseVisibility = mix(baseVisibility, step(0.9475, visibilitySeed), f4);
-    float visibility = mix(baseVisibility, step(0.86, visibilitySeed), f5);
+    baseVisibility = mix(baseVisibility, step(0.9475, visibilitySeed), f3);
+    float visibility = mix(baseVisibility, step(0.86, visibilitySeed), f4);
     
     float sizeMultiplier = 3.0; 
     float h = uResolution.y;
@@ -168,22 +162,35 @@ const fragmentShader = `
 `;
 
 const glowVertexShader = `
-  varying vec3 vNormal;
+  varying vec2 vUv;
   void main() {
-    vNormal = normalize(normalMatrix * normal);
+    vUv = uv;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
 
 const glowFragmentShader = `
   uniform float uGlowProgress;
-  varying vec3 vNormal;
+  uniform float uTime;
+  varying vec2 vUv;
   void main() {
-    float edge = abs(dot(vNormal, vec3(0.0, 0.0, 1.0)));
-    float intensity = pow(edge, 1.1); // Even broader glow for a volumetric feel
-    // Mix between bright sphere (0.28) and refined shapes (0.06)
-    float op = mix(0.06, 0.28, uGlowProgress);
-    gl_FragColor = vec4(0.4, 0.4, 1.0, intensity * op); 
+    // Pure 2D radial distance from center
+    float dist = distance(vUv, vec2(0.5));
+    if (dist > 0.5) discard;
+    
+    // Smooth radial falloff (spread wider to visually reach the surface)
+    float intensity = smoothstep(0.5, 0.0, dist);
+    intensity = pow(intensity, 0.6); // Lower power pushes the light much closer to the edge
+    
+    // Requested Glow Color (#383973)
+    vec3 finalColor = vec3(56.0/255.0, 57.0/255.0, 115.0/255.0);
+    
+    // Subtle pulse
+    float pulse = 1.0 + sin(uTime * 1.5) * 0.08;
+    float op = 1.0 * pulse; // Increased opacity to 100%
+    
+    // Additive alpha masking
+    gl_FragColor = vec4(finalColor, intensity * op); 
   }
 `;
 
@@ -195,7 +202,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
   const particleCount = 20000;
   const progressVel = useRef(0); 
 
-  const { positions, posBox, posHelix, posBulb, posStars, posWand, sizes } = useMemo(() => {
+  const { positions, posBox, posHelix, posStars, posWand, sizes } = useMemo(() => {
     const pSphere = new Float32Array(particleCount * 3);
     const pBox = new Float32Array(particleCount * 3);
     const pHelix = new Float32Array(particleCount * 3);
@@ -357,7 +364,7 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
 
       pointSizes[i] = Math.random() * 1.5 + 0.5;
     }
-    return { positions: pSphere, posBox: pBox, posHelix: pHelix, posBulb: pBulb, posStars: pStars, posWand: pWand, sizes: pointSizes };
+    return { positions: pSphere, posBox: pBox, posHelix: pHelix, posStars: pStars, posWand: pWand, sizes: pointSizes };
   }, []);
 
   const entryDuration = 6.0; 
@@ -367,26 +374,31 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
     const elapsed = state.clock.elapsedTime;
     if (groupRef.current) {
       const sVal = smoothProgress.get();
-      // Position logic based on 18/2 thresholds
+      // Position logic based on 18/2 thresholds (Centered for mobile)
+      const isMobile = state.size.width < 768;
       let tx = 0, ty = 0, tz = 0;
-      if (sVal < 0.02) { 
-        const t = sVal / 0.02;
-        tx = 0 * (1 - t) + -2.5 * t; 
-        ty = 0; tz = 0;
+      
+      if (!isMobile) {
+        if (sVal < 0.09) {
+          tx = 0;
+        }
+        else if (sVal < 0.24) { 
+          // Slow slide: center → left over 15% of scroll
+          const t = (sVal - 0.09) / 0.15;
+          tx = 0 * (1 - t) + -2.5 * t; 
+        }
+        else if (sVal < 0.59) { tx = -2.5; } 
+        else if (sVal < 0.74) { 
+          // Slow slide: left → right over 15% of scroll
+          const t = (sVal - 0.59) / 0.15;
+          tx = -2.5 * (1 - t) + 3.0 * t; 
+        }
+        else { tx = 3.0; }
       }
-      else if (sVal < 0.60) { tx = -2.5; ty = 0.0; tz = 0.0; } 
-      else if (sVal < 0.62) { 
-        const t = (sVal - 0.60) / 0.02;
-        tx = -2.5 * (1 - t) + 3.0 * t; 
-        ty = 0.0; tz = 0.0;
-      }
-      else { tx = 3.0; ty = 0.0; tz = 0.0; }
       
       groupRef.current.position.set(tx, ty, tz);
 
-      const baseRotation = (sVal < 0.02 ? (sVal / 0.02) : 1) * 0.38;
-      const rotationFade = sVal >= 0.02 ? 0.0 : 1.0;
-      groupRef.current.rotation.y = baseRotation * rotationFade;
+      // Rotation is handled purely by time-based auto-rotation in the vertex shader
 
       let finalScale = targetScale;
       if (elapsed < entryDuration) {
@@ -396,13 +408,21 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       groupRef.current.scale.set(finalScale, finalScale, finalScale);
 
       if (glowRef.current) {
-        const t = Math.max(0, Math.min(1, sVal / 0.02));
-        const glowScale = 1.05 * (1 - t) + 1.5 * t;
+        // Keep plane positioned with the group but don't rotate with it
+        if (groupRef.current) {
+          glowRef.current.position.copy(groupRef.current.position);
+        }
+        
+        // Expand halo to reach close to the surface and fade out
+        const glowScale = 1.05;
         glowRef.current.scale.set(glowScale, glowScale, glowScale);
         
         const glowMat = glowRef.current.material as THREE.ShaderMaterial;
         if (glowMat.uniforms.uGlowProgress) {
-          glowMat.uniforms.uGlowProgress.value = 1.0 - t; 
+          glowMat.uniforms.uGlowProgress.value = 1.0 - Math.max(0, Math.min(1, (sVal - 0.09) / 0.003)); 
+        }
+        if (glowMat.uniforms.uTime) {
+          glowMat.uniforms.uTime.value = elapsed;
         }
       }
     }
@@ -413,16 +433,15 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
       shaderRef.current.uniforms.uPixelRatio.value = state.viewport.dpr;
       const sVal = smoothProgress.get();
       let prog;
-      if (sVal < 0.02) prog = sVal / 0.02;
-      else if (sVal < 0.20) prog = 1.0;
-      else if (sVal < 0.22) prog = 1.0 + (sVal - 0.20) / 0.02;
-      else if (sVal < 0.40) prog = 2.0;
-      else if (sVal < 0.42) prog = 2.0 + (sVal - 0.40) / 0.02;
-      else if (sVal < 0.60) prog = 3.0;
-      else if (sVal < 0.62) prog = 3.0 + (sVal - 0.60) / 0.02;
-      else if (sVal < 0.80) prog = 4.0;
-      else if (sVal < 0.82) prog = 4.0 + (sVal - 0.80) / 0.02;
-      else prog = 5.0;
+      if (sVal < 0.09) prog = 0.0;
+      else if (sVal < 0.093) prog = (sVal - 0.09) / 0.003;
+      else if (sVal < 0.33) prog = 1.0;
+      else if (sVal < 0.333) prog = 1.0 + (sVal - 0.33) / 0.003;
+      else if (sVal < 0.59) prog = 2.0;
+      else if (sVal < 0.593) prog = 2.0 + (sVal - 0.59) / 0.003;
+      else if (sVal < 0.80) prog = 3.0;
+      else if (sVal < 0.803) prog = 3.0 + (sVal - 0.80) / 0.003;
+      else prog = 4.0;
       // Refined Elastic-Snap Spring Morph Logic
       const stiffness = 60.0;
       const damping = 4.5;
@@ -450,15 +469,15 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
   });
 
   return (
+    <>
     <group ref={groupRef}>
       <points>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} />
           <bufferAttribute attach="attributes-targetPos1" count={posBox.length / 3} array={posBox} itemSize={3} />
           <bufferAttribute attach="attributes-targetPos2" count={posHelix.length / 3} array={posHelix} itemSize={3} />
-          <bufferAttribute attach="attributes-targetPos3" count={posBulb.length / 3} array={posBulb} itemSize={3} />
-          <bufferAttribute attach="attributes-targetPos4" count={posStars.length / 3} array={posStars} itemSize={3} />
-          <bufferAttribute attach="attributes-targetPos5" count={posWand.length / 3} array={posWand} itemSize={3} />
+          <bufferAttribute attach="attributes-targetPos3" count={posStars.length / 3} array={posStars} itemSize={3} />
+          <bufferAttribute attach="attributes-targetPos4" count={posWand.length / 3} array={posWand} itemSize={3} />
           <bufferAttribute attach="attributes-size" count={sizes.length} array={sizes} itemSize={1} />
         </bufferGeometry>
         <shaderMaterial
@@ -479,20 +498,22 @@ export function ParticleGlobe({ scrollY }: { scrollY: any }) {
           blending={THREE.NormalBlending}
         />
       </points>
-      <mesh ref={glowRef}>
-        <sphereGeometry args={[2.4, 32, 32]} />
-        <shaderMaterial
-          vertexShader={glowVertexShader}
-          fragmentShader={glowFragmentShader}
-          uniforms={{
-            uGlowProgress: { value: 1.0 }
-          }}
-          transparent={true}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-          side={THREE.BackSide}
-        />
-      </mesh>
     </group>
+    <mesh ref={glowRef}>
+      <planeGeometry args={[4.8, 4.8]} />
+      <shaderMaterial
+        vertexShader={glowVertexShader}
+        fragmentShader={glowFragmentShader}
+        uniforms={{
+          uGlowProgress: { value: 1.0 },
+          uTime: { value: 0 }
+        }}
+        transparent={true}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+    </>
   );
 }
